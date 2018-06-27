@@ -5,7 +5,7 @@ from tests.contracts.smart_contract_testcase import SamrtContractTestCase
 from seneca.execute_sc import execute_contract
 
 
-log = get_logger("Testelection")
+log = get_logger("TestElection")
 
 voter_1 = 'voter_1'
 voter_2 = 'voter_2'

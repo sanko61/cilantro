@@ -5,11 +5,11 @@ from tests.contracts.smart_contract_testcase import SamrtContractTestCase
 from seneca.execute_sc import execute_contract
 
 
-log = get_logger("Testelection")
+log = get_logger("TestElection")
 user_id = 'tester'
 POLICY = 'test_election'
 
-class Testelection(SamrtContractTestCase):
+class TestElection(SamrtContractTestCase):
     def test_enum(self):
         self.run_contract(code_str="""
 import election
