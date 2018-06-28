@@ -49,7 +49,7 @@ def run_delegate(slot_num):
     d_info['ip'] = os.getenv('HOST_IP')
 
     log.critical("Building delegate on slot {} with info {}".format(slot_num, d_info))
-    
+
     NodeFactory.run_delegate(ip=d_info['ip'], signing_key=d_info['sk'])
 
 
@@ -73,6 +73,7 @@ class TestBootstrap(BaseNetworkTestCase):
     NUM_WITNESS = 2
     NUM_DELEGATES = 3
 
+    @vmnet_test
     def test_bootstrap(self):
         # start mysql in all nodes
         for node_name in ['masternode'] + ['witness_{}'.format(i+1+1) for i in range(self.NUM_WITNESS)] + ['delegate_{}'.format(i+1+3) for i in range(self.NUM_DELEGATES)]:
