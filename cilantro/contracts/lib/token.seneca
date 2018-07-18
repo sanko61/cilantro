@@ -20,9 +20,12 @@ allowances = st.create_table('allowances', [
     ('amount', int)
 ])
 
+
 def _raw_transfer(sender, receiver, amount):
-    s_balance = balances.select.where(balances.address == sender).run()
+    s_balance = balances.select().where(balances.address == sender).run()
     assert s_balance, 'Sender has no wallet, therefore no funds.'
+
+    s_balance = s_balance[0]
 
     assert s_balance['amount'] >= amount, 'Sender does not have enough funds'
 
@@ -30,20 +33,26 @@ def _raw_transfer(sender, receiver, amount):
         'amount': s_balance['amount'] - amount
         }).where(balances.address == sender).run()
 
+    r_balance = balances.select().where(balances.address == receiver).run()
 
-    r_balance = balances.select.where(balances.address == receiver).run()
+    print(r_balance)
 
-    if not query:
+    if not r_balance:
         balances.insert([{'address': receiver, 'amount': amount}]).run()
     else:
-        balances.update({
+        print(r_balance)
+        #r_balance = r_balance[0]
+        balances.update([{
             'amount': r_balance['amount'] + amount
-        }).where(balances.address == receiver).run()
+        }]).where(balances.address == receiver).run()
 
 
+@export
 def transfer(address, amount):
-    _raw_transfer(rt.caller_id, address, amount)
+    _raw_transfer(rt.global_run_data.author, address, amount)
 
+
+@export
 def allow(spender, amount):
     allowance = allowances.select.where(
         allowances.address == rt.caller_id and allowances.spender == spender
@@ -58,8 +67,13 @@ def allow(spender, amount):
     else:
         allowances.update({
             'amount': amount
-        }.where(allowances.address == rt.caller_id and allowances.spender == spender)
+        }).where(
+            allowances.address == rt.caller_id and
+            allowances.spender == spender
+        ).run()
 
+
+@export
 def transfer_from(owner, receiver, amount):
     allowance = allowances.select.where(
         allowances.address == owner and allowances.spender == rt.caller_id
@@ -75,22 +89,34 @@ def transfer_from(owner, receiver, amount):
 
     _raw_transfer(owner, receiver)
 
+@export
+def balance_of(address):
+    balance = balances.select().where(balances.address == address).run()
+    if not balance:
+        return 0
+    return balance[0]['amount']
+
+@export
 def mint(address, amount):
     if rt.caller_id == owner:
         wallet = balances.select.where(balances.address == address).run()
 
-        if not query:
+        if not wallet:
             # create wallet
             balances.insert([{'address': address, 'amount': amount}]).run()
         else:
-            balances.update({'amount': wallet[0]['amount'] + amount_to_add})
-                .where(balances.address == address)
+            balances.update({'amount': wallet[0]['amount'] + amount})\
+                .where(balances.address == address)\
                 .run()
 
+
+@export
 def change_owner(address):
-    if rt.caller == owner:
+    if rt.caller_id == owner:
         owner = address
 
+exports = make_exports()
+
 if __name__ == '__main__':
-    balances.insert(['wallet_id' : 'STU', 'amount': 1000000)
-    balances.insert(['wallet_id' : 'DAVIS', 'amount': 1000000)
+    balances.insert([{'address': 'STU', 'amount': 1000000}]).run()
+    balances.insert([{'address': 'DAVIS', 'amount': 1000000}]).run()
