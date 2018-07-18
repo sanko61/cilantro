@@ -39,142 +39,142 @@ def random_envelope(sk=None, tx=None):
 
 class TestTransportIntegration(MPTestCase):
 
-    @vmnet_test
-    def test_pubsub_1_1_1(self):
-        """
-        Tests pub/sub 1-1 (one sub one pub) with one message
-        """
-        def config_sub(composer: Composer):
-            from unittest.mock import MagicMock
+    # @vmnet_test
+    # def test_pubsub_1_1_1(self):
+    #     """
+    #     Tests pub/sub 1-1 (one sub one pub) with one message
+    #     """
+    #     def config_sub(composer: Composer):
+    #         from unittest.mock import MagicMock
+    #
+    #         composer.interface.router = MagicMock()
+    #         return composer
+    #
+    #     def assert_sub(composer: Composer):
+    #         from cilantro.messages import ReactorCommand, Envelope
+    #         from cilantro.protocol.statemachine.decorators import StateInput
+    #         cb = ReactorCommand.create_callback(callback=StateInput.INPUT, envelope=env)
+    #         composer.interface.router.route_callback.assert_called_once_with(cb)
+    #
+    #     env = random_envelope()
+    #
+    #     sub = MPComposer(config_fn=config_sub, assert_fn=assert_sub, name='** [MN1] SUB', sk=sk1)
+    #     pub = MPComposer(name='++ [Delegate1] PUB', sk=sk2)
+    #     pub_ip = pub.ip
+    #
+    #     sub.add_sub(vk=vk2, filter=FILTER)
+    #     pub.add_pub(ip=pub_ip)
+    #
+    #     time.sleep(0.2)
+    #
+    #     pub.send_pub_env(filter=FILTER, envelope=env)
+    #
+    #     self.start()
 
-            composer.interface.router = MagicMock()
-            return composer
-
-        def assert_sub(composer: Composer):
-            from cilantro.messages import ReactorCommand, Envelope
-            from cilantro.protocol.statemachine.decorators import StateInput
-            cb = ReactorCommand.create_callback(callback=StateInput.INPUT, envelope=env)
-            composer.interface.router.route_callback.assert_called_once_with(cb)
-
-        env = random_envelope()
-
-        sub = MPComposer(config_fn=config_sub, assert_fn=assert_sub, name='** [MN1] SUB', sk=sk1)
-        pub = MPComposer(name='++ [Delegate1] PUB', sk=sk2)
-        pub_ip = pub.ip
-
-        sub.add_sub(vk=vk2, filter=FILTER)
-        pub.add_pub(ip=pub_ip)
-
-        time.sleep(0.2)
-
-        pub.send_pub_env(filter=FILTER, envelope=env)
-
-        self.start()
-
-    @vmnet_test
-    def test_pubsub_n_1_n(self):
-        """
-        Tests pub/sub with 2 pubs, 1 pub, and multiple messages and the same filter
-        """
-        def config_sub(composer: Composer):
-            from unittest.mock import MagicMock
-            composer.interface.router = MagicMock()
-            return composer
-
-        def assert_sub(composer: Composer):
-            from cilantro.messages import ReactorCommand, Envelope
-            from cilantro.protocol.statemachine.decorators import StateInput
-            from unittest.mock import call
-
-            expected_calls = []
-            for env in envs:
-                callback = ReactorCommand.create_callback(callback=StateInput.INPUT, envelope=env)
-                expected_calls.append(call(callback))
-
-            call_args = composer.interface.router.route_callback.call_args_list
-
-            assert len(call_args) == len(expected_calls), "route_callback should be called exactly {} times, not {} " \
-                                                          "times with {}".format(len(expected_calls), len(call_args), call_args)
-            composer.interface.router.route_callback.assert_has_calls(expected_calls, any_order=True)
-
-        envs = [random_envelope() for _ in range(4)]
-
-        sub = MPComposer(config_fn=config_sub, assert_fn=assert_sub, name='** [MN1] SUB', sk=sk1)
-        pub1 = MPComposer(name='++ [Delegate1] PUB1', sk=sk2)
-        pub2 = MPComposer(name='++ [Delegate2] PUB2', sk=sk3)
-
-        sub.add_sub(vk=vk2, filter=FILTER)
-        sub.add_sub(vk=vk3, filter=FILTER)
-
-        pub1.add_pub(ip=pub1.ip)
-        pub2.add_pub(ip=pub2.ip)
-
-        time.sleep(1.0)
-
-        pub1.send_pub_env(filter=FILTER, envelope=envs[0])
-        pub1.send_pub_env(filter=FILTER, envelope=envs[1])
-
-        pub2.send_pub_env(filter=FILTER, envelope=envs[2])
-        pub2.send_pub_env(filter=FILTER, envelope=envs[3])
-
-        self.start()
-
-    # TODO same test as above, but with multiple filters
-
-    @vmnet_test
-    def test_pubsub_n_1_n_removesub(self):
-        """
-        Tests pub/sub n-1, with a sub removing a publisher after its first message
-        """
-        def configure(composer: Composer):
-            from unittest.mock import MagicMock
-            composer.interface.router.route_callback = MagicMock()
-            return composer
-
-        def assert_sub(composer: Composer):
-            from cilantro.messages import ReactorCommand
-            from cilantro.protocol.statemachine.decorators import StateInput
-            from unittest.mock import call
-
-            callback1 = ReactorCommand.create_callback(callback=StateInput.INPUT, envelope=env1)
-            callback2 = ReactorCommand.create_callback(callback=StateInput.INPUT, envelope=env2)
-            calls = [call(callback1), call(callback2)]
-
-            call_args = composer.interface.router.route_callback.call_args_list
-
-            assert len(call_args) == 2, "route_callback should be called exactly twice, not {} times with {}"\
-                                        .format(len(call_args), call_args)
-            composer.interface.router.route_callback.assert_has_calls(calls, any_order=True)
-
-        env1 = random_envelope()
-        env2 = random_envelope()
-        env3 = random_envelope()
-
-        sub = MPComposer(config_fn=configure, assert_fn=assert_sub, name='** SUB [MN1]', sk=sk1)
-        pub1 = MPComposer(name='++ PUB 1 [Delegate1]', sk=sk2)
-        pub2 = MPComposer(name='++ PUB 2 [Delegate2]', sk=sk3)
-
-        sub.add_sub(vk=vk2, filter=FILTER)  # sub to pub1
-        sub.add_sub(vk=vk3, filter=FILTER)  # sub to pub2
-
-        pub1.add_pub(ip=pub1.ip)  # Pub on its own URL
-        pub2.add_pub(ip=pub2.ip)  # Pub on its own URL
-
-        time.sleep(0.2)
-
-        pub1.send_pub_env(filter=FILTER, envelope=env1)
-        pub2.send_pub_env(filter=FILTER, envelope=env2)
-
-        time.sleep(1.0)  # allow messages to go through
-        sub.remove_sub_url(vk=vk3)  # unsub to pub2
-        time.sleep(1.0)  # allow remove_sub_url command to go through
-
-        pub2.send_pub_env(filter=FILTER, envelope=env3)  # this should not be recv by sub, as he removed this guy's url
-
-        time.sleep(3.0)  # allow messages to go through before we start checking assertions
-
-        self.start()
-
+    # @vmnet_test
+    # def test_pubsub_n_1_n(self):
+    #     """
+    #     Tests pub/sub with 2 pubs, 1 pub, and multiple messages and the same filter
+    #     """
+    #     def config_sub(composer: Composer):
+    #         from unittest.mock import MagicMock
+    #         composer.interface.router = MagicMock()
+    #         return composer
+    #
+    #     def assert_sub(composer: Composer):
+    #         from cilantro.messages import ReactorCommand, Envelope
+    #         from cilantro.protocol.statemachine.decorators import StateInput
+    #         from unittest.mock import call
+    #
+    #         expected_calls = []
+    #         for env in envs:
+    #             callback = ReactorCommand.create_callback(callback=StateInput.INPUT, envelope=env)
+    #             expected_calls.append(call(callback))
+    #
+    #         call_args = composer.interface.router.route_callback.call_args_list
+    #
+    #         assert len(call_args) == len(expected_calls), "route_callback should be called exactly {} times, not {} " \
+    #                                                       "times with {}".format(len(expected_calls), len(call_args), call_args)
+    #         composer.interface.router.route_callback.assert_has_calls(expected_calls, any_order=True)
+    #
+    #     envs = [random_envelope() for _ in range(4)]
+    #
+    #     sub = MPComposer(config_fn=config_sub, assert_fn=assert_sub, name='** [MN1] SUB', sk=sk1)
+    #     pub1 = MPComposer(name='++ [Delegate1] PUB1', sk=sk2)
+    #     pub2 = MPComposer(name='++ [Delegate2] PUB2', sk=sk3)
+    #
+    #     sub.add_sub(vk=vk2, filter=FILTER)
+    #     sub.add_sub(vk=vk3, filter=FILTER)
+    #
+    #     pub1.add_pub(ip=pub1.ip)
+    #     pub2.add_pub(ip=pub2.ip)
+    #
+    #     time.sleep(1.0)
+    #
+    #     pub1.send_pub_env(filter=FILTER, envelope=envs[0])
+    #     pub1.send_pub_env(filter=FILTER, envelope=envs[1])
+    #
+    #     pub2.send_pub_env(filter=FILTER, envelope=envs[2])
+    #     pub2.send_pub_env(filter=FILTER, envelope=envs[3])
+    #
+    #     self.start()
+    #
+    # # TODO same test as above, but with multiple filters
+    #
+    # @vmnet_test
+    # def test_pubsub_n_1_n_removesub(self):
+    #     """
+    #     Tests pub/sub n-1, with a sub removing a publisher after its first message
+    #     """
+    #     def configure(composer: Composer):
+    #         from unittest.mock import MagicMock
+    #         composer.interface.router.route_callback = MagicMock()
+    #         return composer
+    #
+    #     def assert_sub(composer: Composer):
+    #         from cilantro.messages import ReactorCommand
+    #         from cilantro.protocol.statemachine.decorators import StateInput
+    #         from unittest.mock import call
+    #
+    #         callback1 = ReactorCommand.create_callback(callback=StateInput.INPUT, envelope=env1)
+    #         callback2 = ReactorCommand.create_callback(callback=StateInput.INPUT, envelope=env2)
+    #         calls = [call(callback1), call(callback2)]
+    #
+    #         call_args = composer.interface.router.route_callback.call_args_list
+    #
+    #         assert len(call_args) == 2, "route_callback should be called exactly twice, not {} times with {}"\
+    #                                     .format(len(call_args), call_args)
+    #         composer.interface.router.route_callback.assert_has_calls(calls, any_order=True)
+    #
+    #     env1 = random_envelope()
+    #     env2 = random_envelope()
+    #     env3 = random_envelope()
+    #
+    #     sub = MPComposer(config_fn=configure, assert_fn=assert_sub, name='** SUB [MN1]', sk=sk1)
+    #     pub1 = MPComposer(name='++ PUB 1 [Delegate1]', sk=sk2)
+    #     pub2 = MPComposer(name='++ PUB 2 [Delegate2]', sk=sk3)
+    #
+    #     sub.add_sub(vk=vk2, filter=FILTER)  # sub to pub1
+    #     sub.add_sub(vk=vk3, filter=FILTER)  # sub to pub2
+    #
+    #     pub1.add_pub(ip=pub1.ip)  # Pub on its own URL
+    #     pub2.add_pub(ip=pub2.ip)  # Pub on its own URL
+    #
+    #     time.sleep(0.2)
+    #
+    #     pub1.send_pub_env(filter=FILTER, envelope=env1)
+    #     pub2.send_pub_env(filter=FILTER, envelope=env2)
+    #
+    #     time.sleep(1.0)  # allow messages to go through
+    #     sub.remove_sub_url(vk=vk3)  # unsub to pub2
+    #     time.sleep(1.0)  # allow remove_sub_url command to go through
+    #
+    #     pub2.send_pub_env(filter=FILTER, envelope=env3)  # this should not be recv by sub, as he removed this guy's url
+    #
+    #     time.sleep(3.0)  # allow messages to go through before we start checking assertions
+    #
+    #     self.start()
+    #
     @vmnet_test
     def test_pubsub_1_1_2_mult_filters(self):
         """
@@ -213,63 +213,63 @@ class TestTransportIntegration(MPTestCase):
         pub.send_pub_env(filter=filter2, envelope=env2)
 
         self.start()
-
-    @vmnet_test
-    def test_req_reply_1_1_1(self):
-        """
-        Tests request/reply 1_1_1
-        """
-        def config_router(composer: Composer):
-            from unittest.mock import MagicMock
-            def reply(*args, **kwargs):  # do i need the *args **kwargs ??
-                composer.send_reply(message=reply_msg, request_envelope=request_env)
-
-            composer.interface.router = MagicMock()
-            composer.interface.router.route_callback.side_effect = reply
-            return composer
-
-        def config_dealer(composer: Composer):
-            from unittest.mock import MagicMock
-            composer.interface.router = MagicMock()
-            return composer
-
-        def assert_dealer(composer: Composer):
-            from cilantro.messages import ReactorCommand
-
-            args = composer.interface.router.route_callback.call_args_list
-            assert len(args) == 1, "dealer's route_callback should of only been called once (with the reply env)"
-
-            call = args[0]
-            callback_cmd = call[0][0]
-
-            assert isinstance(callback_cmd, ReactorCommand), "arg of route_callback should be a ReactorCommand"
-            assert callback_cmd.envelope.message == reply_msg, "Callback's envelope's message should be the reply_msg"
-
-        def assert_router(composer: Composer):
-            from cilantro.protocol.statemachine.decorators import StateInput
-            from cilantro.messages import ReactorCommand
-            cb = ReactorCommand.create_callback(callback=StateInput.REQUEST, envelope=request_env, header=dealer_id)
-            composer.interface.router.route_callback.assert_called_once_with(cb)
-
-        dealer_id = vk1
-        dealer_sk = sk1
-        router_sk = sk2
-        router_vk = vk2
-
-        request_env = random_envelope(sk=dealer_sk)
-        reply_msg = random_msg()
-
-        dealer = MPComposer(name='DEALER', sk=sk1, config_fn=config_dealer, assert_fn=assert_dealer)
-        router = MPComposer(config_fn=config_router, assert_fn=assert_router, name='ROUTER', sk=router_sk)
-
-        dealer.add_dealer(vk=router_vk)
-        router.add_router(vk=router_vk)
-
-        time.sleep(1.0)
-
-        dealer.send_request_env(vk=router_vk, envelope=request_env)
-
-        self.start()
+    #
+    # @vmnet_test
+    # def test_req_reply_1_1_1(self):
+    #     """
+    #     Tests request/reply 1_1_1
+    #     """
+    #     def config_router(composer: Composer):
+    #         from unittest.mock import MagicMock
+    #         def reply(*args, **kwargs):  # do i need the *args **kwargs ??
+    #             composer.send_reply(message=reply_msg, request_envelope=request_env)
+    #
+    #         composer.interface.router = MagicMock()
+    #         composer.interface.router.route_callback.side_effect = reply
+    #         return composer
+    #
+    #     def config_dealer(composer: Composer):
+    #         from unittest.mock import MagicMock
+    #         composer.interface.router = MagicMock()
+    #         return composer
+    #
+    #     def assert_dealer(composer: Composer):
+    #         from cilantro.messages import ReactorCommand
+    #
+    #         args = composer.interface.router.route_callback.call_args_list
+    #         assert len(args) == 1, "dealer's route_callback should of only been called once (with the reply env)"
+    #
+    #         call = args[0]
+    #         callback_cmd = call[0][0]
+    #
+    #         assert isinstance(callback_cmd, ReactorCommand), "arg of route_callback should be a ReactorCommand"
+    #         assert callback_cmd.envelope.message == reply_msg, "Callback's envelope's message should be the reply_msg"
+    #
+    #     def assert_router(composer: Composer):
+    #         from cilantro.protocol.statemachine.decorators import StateInput
+    #         from cilantro.messages import ReactorCommand
+    #         cb = ReactorCommand.create_callback(callback=StateInput.REQUEST, envelope=request_env, header=dealer_id)
+    #         composer.interface.router.route_callback.assert_called_once_with(cb)
+    #
+    #     dealer_id = vk1
+    #     dealer_sk = sk1
+    #     router_sk = sk2
+    #     router_vk = vk2
+    #
+    #     request_env = random_envelope(sk=dealer_sk)
+    #     reply_msg = random_msg()
+    #
+    #     dealer = MPComposer(name='DEALER', sk=sk1, config_fn=config_dealer, assert_fn=assert_dealer)
+    #     router = MPComposer(config_fn=config_router, assert_fn=assert_router, name='ROUTER', sk=router_sk)
+    #
+    #     dealer.add_dealer(vk=router_vk)
+    #     router.add_router(vk=router_vk)
+    #
+    #     time.sleep(1.0)
+    #
+    #     dealer.send_request_env(vk=router_vk, envelope=request_env)
+    #
+    #     self.start()
 
     # def test_req_reply_1_1_1_timeout(self):
     #     """
