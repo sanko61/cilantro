@@ -1,0 +1,96 @@
+# do not delete the comment below. it is necessary for unit tests.
+# UNITTEST_FLAG_CURRENCY_SENECA 1729
+
+import seneca.storage.tabular as st
+import seneca.crypto as crypto
+import seneca.runtime as rt
+import seneca.stdlib as std
+from seneca.modulelib import export, make_exports
+
+owner = 'STU'
+
+balances = st.create_table('balances', [
+    ('address', st.str_len(200), True),
+    ('amount', int),
+])
+
+allowances = st.create_table('allowances', [
+    ('address', st.str_len(200)),
+    ('spender', st.str_len(200)),
+    ('amount', int)
+])
+
+def _raw_transfer(sender, receiver, amount):
+    s_balance = balances.select.where(balances.address == sender).run()
+    assert s_balance, 'Sender has no wallet, therefore no funds.'
+
+    assert s_balance['amount'] >= amount, 'Sender does not have enough funds'
+
+    balances.update({
+        'amount': s_balance['amount'] - amount
+        }).where(balances.address == sender).run()
+
+
+    r_balance = balances.select.where(balances.address == receiver).run()
+
+    if not query:
+        balances.insert([{'address': receiver, 'amount': amount}]).run()
+    else:
+        balances.update({
+            'amount': r_balance['amount'] + amount
+        }).where(balances.address == receiver).run()
+
+
+def transfer(address, amount):
+    _raw_transfer(rt.caller_id, address, amount)
+
+def allow(spender, amount):
+    allowance = allowances.select.where(
+        allowances.address == rt.caller_id and allowances.spender == spender
+        ).run()
+
+    if not allowance:
+        allowances.insert({
+            'address': rt.caller_id,
+            'spender': spender,
+            'amount': amount
+        })
+    else:
+        allowances.update({
+            'amount': amount
+        }.where(allowances.address == rt.caller_id and allowances.spender == spender)
+
+def transfer_from(owner, receiver, amount):
+    allowance = allowances.select.where(
+        allowances.address == owner and allowances.spender == rt.caller_id
+    ).run()
+
+    assert allowance, 'Caller has no rights to the funds'
+
+    assert allowance['amount'] >= amount, 'Caller is not allowed enough funds'
+
+    allowances.update({
+        'amount': allowance['amount'] - amount
+    }).where(allowances.address == rt.caller_id and allowances.spender == spender).run()
+
+    _raw_transfer(owner, receiver)
+
+def mint(address, amount):
+    if rt.caller_id == owner:
+        wallet = balances.select.where(balances.address == address).run()
+
+        if not query:
+            # create wallet
+            balances.insert([{'address': address, 'amount': amount}]).run()
+        else:
+            balances.update({'amount': wallet[0]['amount'] + amount_to_add})
+                .where(balances.address == address)
+                .run()
+
+def change_owner(address):
+    if rt.caller == owner:
+        owner = address
+
+if __name__ == '__main__':
+    balances.insert(['wallet_id' : 'STU', 'amount': 1000000)
+    balances.insert(['wallet_id' : 'DAVIS', 'amount': 1000000)

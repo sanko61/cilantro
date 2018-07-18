@@ -88,8 +88,8 @@ def get_logger(name=''):
     log = logging.getLogger(name)
     log.setLevel(_LOG_LVL)
 
-    sys.stdout = LoggerWriter(log.debug)
-    sys.stderr = LoggerWriter(log.error)
+    # sys.stdout = LoggerWriter(log.debug)
+    # sys.stderr = LoggerWriter(log.error)
 
     return log
 
