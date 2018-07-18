@@ -35,8 +35,6 @@ def _raw_transfer(sender, receiver, amount):
 
     r_balance = balances.select().where(balances.address == receiver).run()
 
-    print(r_balance)
-
     if not r_balance:
         balances.insert([{'address': receiver, 'amount': amount}]).run()
     else:

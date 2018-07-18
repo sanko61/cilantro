@@ -14,9 +14,9 @@ class TestToken(SmartContractTestCase):
         ('falcon', 'token'),
     )
     def test_transfer(self, stu, falcon):
-        stu.transfer(falcon, 1000)
-        falcon_balance = falcon.balance_of(falcon)
-        print(falcon_balance)
+        stu.transfer("falcon", 1000)
+        falcon_balance = falcon.balance_of("falcon")
+        self.assertEqual(1000, falcon_balance)
 
 if __name__ == '__main__':
     unittest.main()
