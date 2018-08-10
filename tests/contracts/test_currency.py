@@ -2,8 +2,8 @@ import unittest
 from unittest import TestCase
 from cilantro.logger import get_logger
 from tests.contracts.smart_contract_testcase import *
-from seneca.execute_sc import execute_contract
-import seneca.smart_contract_user_libs.stdlib as std
+from seneca.execute import execute_contract
+import seneca.smart_contract_user_libs.types as std
 import time
 
 log = get_logger("TestElection")
@@ -124,19 +124,19 @@ class TestCurrency(SmartContractTestCase):
 
     @contract(('DAVIS','currency'))
     def test_lock_coins(self, davis):
-        davis.lock_coins(500, std.timedelta(seconds=3))
+        davis.lock_coins(500, types.timedelta(seconds=3))
         davis.is_locked('DAVIS')
         self.assertEqual(davis.get_balance('DAVIS'), 3696447)
 
     @contract(('DAVIS','currency'))
     def test_lock_coins_not_enough(self, davis):
         with self.assertRaises(Exception) as context:
-            davis.lock_coins(3696950, std.timedelta(seconds=1))
+            davis.lock_coins(3696950, types.timedelta(seconds=1))
 
 
     @contract(('DAVIS','currency'))
     def test_unlock_coins(self, davis):
-        davis.lock_coins(500, std.timedelta(seconds=1))
+        davis.lock_coins(500, types.timedelta(seconds=1))
         self.assertEqual(davis.get_balance('DAVIS'), 3696447)
         self.assertTrue(davis.is_locked('DAVIS'))
         time.sleep(1.5)
@@ -146,7 +146,7 @@ class TestCurrency(SmartContractTestCase):
 
     @contract(('DAVIS','currency'))
     def test_unlock_coins(self, davis):
-        davis.lock_coins(500, std.timedelta(seconds=1))
+        davis.lock_coins(500, types.timedelta(seconds=1))
         self.assertEqual(davis.get_balance('DAVIS'), 3696447)
         with self.assertRaises(Exception) as context:
             davis.unlock_coins()
@@ -159,7 +159,7 @@ class TestCurrency(SmartContractTestCase):
     @contract(('DAVIS','currency'))
     def test_lock_coins_negative(self, davis):
         with self.assertRaises(Exception) as context:
-            davis.lock_coins(-123, std.timedelta(seconds=1))
+            davis.lock_coins(-123, types.timedelta(seconds=1))
 
 
 

@@ -2,8 +2,8 @@ import unittest
 from unittest import TestCase
 from cilantro.logger import get_logger
 from tests.contracts.smart_contract_testcase import *
-from seneca.execute_sc import execute_contract
-import seneca.smart_contract_user_libs.stdlib as std
+from seneca.execute import execute_contract
+import seneca.smart_contract_user_libs.types as std
 import time
 
 log = get_logger("TestElection")
@@ -17,7 +17,7 @@ class TestElection(SmartContractTestCase):
         ('c', 'witness_stake_amount')
     )
     def test_stake_amount(self,a,b,c):
-        election_id = a.create_election(std.timedelta(seconds=30))
+        election_id = a.create_election(types.timedelta(seconds=30))
         a.cast_vote(election_id, 10000)
         b.cast_vote(election_id, 10000)
         c.cast_vote(election_id, 12000)
@@ -32,7 +32,7 @@ class TestElection(SmartContractTestCase):
     #     ('c', 'witness_stake_amount')
     # )
     # def test_update_vote(self,a,b,c):
-    #     election_id = a.create_election(std.timedelta(seconds=30))
+    #     election_id = a.create_election(types.timedelta(seconds=30))
     #     a.cast_vote(election_id, 10000)
     #     a.cast_vote(election_id, 12000)
     #     b.cast_vote(election_id, 10000)

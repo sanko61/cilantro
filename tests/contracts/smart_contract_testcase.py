@@ -1,8 +1,8 @@
 from unittest import TestCase
 from unittest import mock
 from cilantro.storage.tables import build_tables
-from seneca.smart_contract_user_libs import stdlib as std
-from seneca.seneca_internal.storage.mysql_executer import Executer
+from seneca.smart_contract_user_libs import types as std
+from seneca.engine.storage.mysql_executer import Executer
 from cilantro.storage.contracts import get_contract_exports
 from cilantro.constants.db import DB_SETTINGS
 
@@ -37,9 +37,9 @@ def mock_datetime(target, datetime_module):
     class DatetimeSubclassMeta(type):
         @classmethod
         def __instancecheck__(mcs, obj):
-            return isinstance(obj, std.datetime)
+            return isinstance(obj, types.datetime)
 
-    class BaseMockedDatetime(std.datetime):
+    class BaseMockedDatetime(types.datetime):
         @classmethod
         def now(cls, tz=None):
             return target.replace(tzinfo=tz)

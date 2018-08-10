@@ -95,7 +95,7 @@ class ReactorDaemon:
 
     def _teardown(self):
         """
-        Close sockets. Teardown executors. Close Event Loop.
+        Close sockets. Teardown executors. Stop Event Loop.
         """
         self.log.info("[DEAMON PROC] Tearing down Reactor Daemon process")
 
@@ -108,7 +108,7 @@ class ReactorDaemon:
 
         self.dht.cleanup()
 
-        self.log.warning("Closing event loop")
+        self.log.warning("Stopping event loop")
         self.loop.call_soon_threadsafe(self.loop.stop)
 
     def _execute_cmd(self, cmd: ReactorCommand):

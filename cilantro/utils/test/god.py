@@ -109,7 +109,7 @@ class God:
             cls.log.warning("Error attempt to send transaction to Masternode at URL {}\nerror={}".format(cls.mn_url, e))
 
     @classmethod
-    def pump_it(cls, rate: int, gen_func=None, use_poisson=True):
+    def pump_it(cls, rate: int, gen_func=None, use_poisson=True, num_of_tx=10000):
         """
         This func blocks.
         :param rate:
@@ -130,7 +130,8 @@ class God:
         cls.log.important("Starting to pump transactions at an average of {} transactions per second".format(rate))
         cls.log.info("Using generator func {}, with use_possion={}".format(gen_func, use_poisson))
 
-        while True:
+        curr_tx = 0
+        while curr_tx < num_of_tx:
             wait = rvs_func()
 
             cls.log.spam("Sending next transaction in {} seconds".format(wait))
@@ -140,6 +141,7 @@ class God:
 
             cls.log.spam("sending transaction {}".format(tx))
             cls.send_tx(tx)
+            curr_tx += 1
 
     @classmethod
     def dump_it(cls, volume: int, gen_func=None):

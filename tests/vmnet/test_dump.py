@@ -78,7 +78,7 @@ class TestPump(BaseNetworkTestCase):
     def test_pump(self):
 
         # Bootstrap master
-        self.execute_python('masternode', run_mn, async=True)
+        self.execute_python('masternode', run_mn, async=True, profiling='c')
 
         # Bootstrap TESTNET_WITNESSES
         for i, nodename in enumerate(self.groups['witness']):

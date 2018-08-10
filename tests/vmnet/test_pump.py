@@ -10,8 +10,7 @@ def run_mn():
     from cilantro.logger import get_logger, overwrite_logger_level
     from cilantro.nodes import NodeFactory
     from cilantro.constants.testnet import TESTNET_MASTERNODES
-    import os
-    import logging
+    import os, logging, time
 
     # overwrite_logger_level(logging.WARNING)
     overwrite_logger_level(logging.DEBUG)
@@ -20,51 +19,52 @@ def run_mn():
     ip = os.getenv('HOST_IP') #Constants.Testnet.Masternodes[0]['ip']
     sk = TESTNET_MASTERNODES[0]['sk']
     NodeFactory.run_masternode(ip=ip, signing_key=sk, reset_db=True)
-
+    time.sleep(30)
+    quit()
 
 def run_witness(slot_num):
     from cilantro.logger import get_logger, overwrite_logger_level
     from cilantro.nodes import NodeFactory
     from cilantro.constants.testnet import TESTNET_WITNESSES
-    import os
-    import logging
+    import os, logging, time
 
-    # overwrite_logger_level(logging.WARNING)
-    overwrite_logger_level(15)
+    overwrite_logger_level(logging.WARNING)
+    # overwrite_logger_level(15)
 
     w_info = TESTNET_WITNESSES[slot_num]
     w_info['ip'] = os.getenv('HOST_IP')
 
     NodeFactory.run_witness(ip=w_info['ip'], signing_key=w_info['sk'], reset_db=True)
-
+    time.sleep(30)
+    quit()
 
 def run_delegate(slot_num):
     from cilantro.logger import get_logger, overwrite_logger_level
     from cilantro.nodes import NodeFactory
     from cilantro.constants.testnet import TESTNET_DELEGATES
-    import os
-    import logging
+    import os, logging, time
 
-    # overwrite_logger_level(logging.WARNING)
-    overwrite_logger_level(21)
+    overwrite_logger_level(logging.WARNING)
+    # overwrite_logger_level(21)
 
     d_info = TESTNET_DELEGATES[slot_num]
     d_info['ip'] = os.getenv('HOST_IP')
 
     NodeFactory.run_delegate(ip=d_info['ip'], signing_key=d_info['sk'], reset_db=True)
-
+    time.sleep(30)
+    quit()
 
 def pump_it(lamd, use_poisson):
     from cilantro.utils.test import God
     from cilantro.logger import get_logger, overwrite_logger_level
-    import logging
+    import logging, time
 
     overwrite_logger_level(logging.WARNING)
 
     log = get_logger("Mr. Pump")
     log.important("Starting the pump")
 
-    God.pump_it(rate=lamd, use_poisson=use_poisson)
+    God.pump_it(rate=lamd, use_poisson=use_poisson, num_of_tx=10000)
 
 class TestPump(BaseNetworkTestCase):
 
@@ -79,7 +79,7 @@ class TestPump(BaseNetworkTestCase):
     def test_bootstrap(self):
 
         # Bootstrap master
-        self.execute_python('masternode', run_mn, async=True)
+        self.execute_python('masternode', run_mn, async=True, profiling='h')
 
         # Bootstrap TESTNET_WITNESSES
         for i, nodename in enumerate(self.groups['witness']):

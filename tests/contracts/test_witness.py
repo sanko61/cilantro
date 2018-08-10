@@ -3,8 +3,8 @@ from unittest import TestCase
 from unittest.mock import patch, Mock
 from cilantro.logger import get_logger
 from tests.contracts.smart_contract_testcase import *
-from seneca.execute_sc import execute_contract
-import seneca.smart_contract_user_libs.stdlib as std
+from seneca.execute import execute_contract
+import seneca.smart_contract_user_libs.types as std
 import time, datetime
 
 log = get_logger("TestElection")
@@ -20,7 +20,7 @@ class TestElection(SmartContractTestCase):
         ('DAVIS', 'currency')
     )
     def test_stake(self, a,b,c,davis, davis_currency):
-        election_id = a.create_election(std.timedelta(seconds=30))
+        election_id = a.create_election(types.timedelta(seconds=30))
         a.cast_vote(election_id, 10000)
         b.cast_vote(election_id, 10000)
         c.cast_vote(election_id, 12000)
@@ -39,15 +39,15 @@ class TestElection(SmartContractTestCase):
     #     ('DAVIS', 'currency')
     # )
     # def test_unstake(self, a,b,c,davis, davis_currency):
-    #     now = std.datetime.now()
+    #     now = types.datetime.now()
     #     with mock_datetime(now, std):
-    #         election_id = a.create_election(std.timedelta(seconds=1))
+    #         election_id = a.create_election(types.timedelta(seconds=1))
     #         a.cast_vote(election_id, 10000)
     #         b.cast_vote(election_id, 10000)
     #         c.cast_vote(election_id, 12000)
     #         res = a.tally_votes(election_id)
     #         davis.stake()
-    #     with mock_datetime(now+std.timedelta(days=31), std):
+    #     with mock_datetime(now+types.timedelta(days=31), std):
     #         davis.unstake()
 
     @contract(
@@ -57,7 +57,7 @@ class TestElection(SmartContractTestCase):
         ('DAVIS', 'witness')
     )
     def test_unstake_fail(self, a,b,c,davis):
-        election_id = a.create_election(std.timedelta(seconds=30))
+        election_id = a.create_election(types.timedelta(seconds=30))
         a.cast_vote(election_id, 10000)
         b.cast_vote(election_id, 10000)
         c.cast_vote(election_id, 12000)
@@ -74,7 +74,7 @@ class TestElection(SmartContractTestCase):
         ('CARL', 'witness')
     )
     def test_is_witness(self, a,b,c, davis,carl):
-        election_id = a.create_election(std.timedelta(seconds=30))
+        election_id = a.create_election(types.timedelta(seconds=30))
         a.cast_vote(election_id, 10000)
         b.cast_vote(election_id, 10000)
         c.cast_vote(election_id, 12000)
@@ -89,7 +89,7 @@ class TestElection(SmartContractTestCase):
         ('CARL', 'witness')
     )
     def test_is_witness_fail(self, a,b,c, carl):
-        election_id = a.create_election(std.timedelta(seconds=30))
+        election_id = a.create_election(types.timedelta(seconds=30))
         a.cast_vote(election_id, 10000)
         b.cast_vote(election_id, 10000)
         c.cast_vote(election_id, 12000)
@@ -104,7 +104,7 @@ class TestElection(SmartContractTestCase):
         ('CARL', 'witness')
     )
     def test_get_vks(self, a,b,c, davis, carl):
-        election_id = a.create_election(std.timedelta(seconds=30))
+        election_id = a.create_election(types.timedelta(seconds=30))
         a.cast_vote(election_id, 10000)
         b.cast_vote(election_id, 10000)
         c.cast_vote(election_id, 12000)

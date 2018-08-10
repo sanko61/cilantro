@@ -22,5 +22,4 @@ else:
     DB_SETTINGS = {'username': settings.get('DB', 'username'),
                    'password': settings.get('DB', 'password'),
                    'db': settings.get('DB', 'database'),
-                   'host': settings.get('DB', 'hostname')
-                   }
+                   'host': settings.get('DB', 'hostname')}

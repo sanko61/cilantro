@@ -4,7 +4,7 @@
 import seneca.storage.tabular as st
 import seneca.crypto as crypto
 import seneca.runtime as rt
-import seneca.stdlib as std
+import seneca.types as types
 from seneca.modulelib import export, make_exports
 
 ledger = st.create_table('ledger', [
@@ -15,7 +15,7 @@ ledger = st.create_table('ledger', [
 safe = st.create_table('safe', [
     ('wallet_id', st.str_len(200)),
     ('amount', int),
-    ('locked_until', std.datetime),
+    ('locked_until', types.datetime),
     ('lock_id', st.str_len(200)) # contract name + name of the lock (if specified)
 ])
 
@@ -25,7 +25,7 @@ allowed = st.create_table('allowed', [
     ('amount', int),
 ])
 
-LOCKED_DURATION = std.timedelta(days=2)
+LOCKED_DURATION = types.timedelta(days=2)
 
 @export
 def get_balance(wallet_id=None):
@@ -155,46 +155,46 @@ def is_locked(wallet_id, amount=None, lock_name='default'):
         return safe.select().where(
             safe.wallet_id != wallet_id and \
             safe.lock_id == lock_id and \
-            safe.locked_until > std.datetime.now()
+            safe.locked_until > types.datetime.now()
         ).run()
     elif amount != None:
         return safe.select().where(
             safe.wallet_id == wallet_id and \
             safe.lock_id == lock_id and \
-            safe.locked_until<=std.datetime.now()
+            safe.locked_until<=types.datetime.now()
         ).run()
     else:
         return safe.select().where(
             safe.wallet_id == wallet_id and \
             safe.lock_id == lock_id and \
             safe.amount == amount and \
-            safe.locked_until<=std.datetime.now()
+            safe.locked_until<=types.datetime.now()
         ).run()
 
 @export
 def lock_coins(amount, duration=None, lock_name='default'):
     if not duration:
-        duration = std.timedelta(seconds=0)
+        duration = types.timedelta(seconds=0)
     wallet_id = rt.global_run_data.author
     contract_id = rt.caller_contract_id
     lock_id = '$'.join([contract_id, lock_name])
     assert amount > 0, 'Cannot lock negative amounts'
     assert not is_locked(wallet_id, lock_name=lock_name), \
         'Wallet {} already locked for "{}"'.format(wallet_id, contract_id)
-    assert type(duration) == std.timedelta, 'Must use {} for duration'.format(std.timedelta)
+    assert type(duration) == types.timedelta, 'Must use {} for duration'.format(types.timedelta)
     remove_coins(wallet_id, amount)
     safe.insert([{
         'wallet_id': wallet_id,
         'amount': amount,
         'lock_id': lock_id,
-        'locked_until': std.datetime.now()+duration
+        'locked_until': types.datetime.now()+duration
     }]).run()
 
 def _set_lock_amount(wallet_id, new_amount, lock_name='default'):
     lock_id = '$'.join([rt.caller_contract_id, lock_name])
     safe.update({
         'amount': new_amount,
-        'locked_until': std.datetime.now() + LOCKED_DURATION
+        'locked_until': types.datetime.now() + LOCKED_DURATION
     }).where(safe.lock_id == lock_id).run()
 
 @export
@@ -217,7 +217,7 @@ def _unlock_coins(wallet_id, lock_name):
         res = safe.delete().where(
             safe.wallet_id == wallet_id and \
             safe.lock_id == lock_id and \
-            safe.locked_until<=std.datetime.now()).run()
+            safe.locked_until<=types.datetime.now()).run()
     assert res['row_count'] != 0, 'Cannot unlock coin (yet)'
     amount = locked_obj[0]['amount']
     add_coins(wallet_id, amount)
