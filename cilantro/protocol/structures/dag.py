@@ -1,11 +1,20 @@
-from seneca.engine.storage.mysql_intermediate import QueryComponent
+from seneca.engine.storage.mysql_intermediate import Query
 from typing import List
 from cilantro.messages.transaction.contract import ContractTransaction
 
+WILDCARD = '*'
+
+
+class ProcessedSqlIntermediate:
+
+    def __init__(self, sql_intermediate: Query):
+        self.intermediate = sql_intermediate
+
+        self.contract_name, self.table_name, self.row_name = '', '', ''
 
 class ContractOutputsNode:
 
-    def __init__(self, relative_exec_time: int, contract: ContractTransaction, sql_intermediates: List[QueryComponent],
+    def __init__(self, relative_exec_time: int, contract: ContractTransaction, sql_intermediates: List[Query],
                  ordering_tuple: tuple):
         self.relative_exec = relative_exec_time
         self.contract = contract
@@ -15,12 +24,16 @@ class ContractOutputsNode:
         self.children = []
         self.parents = []
 
+    def collides(self, other) -> bool:
+        pass
+
 
 class DAG:
 
     def __init__(self, nodes: List[ContractOutputsNode]=None, edges: List[tuple]=None):
         self.nodes = nodes or []
         self.edges = edges or []
+        self.latest_dependencies = {}
 
     def append(self, node: ContractOutputsNode) -> None or List[ContractOutputsNode]:
         """
@@ -30,6 +43,5 @@ class DAG:
         :param node:
         :return:
         """
-        pass
 
-    # def
+
