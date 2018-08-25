@@ -1,5 +1,6 @@
 from sanic import Sanic
 from sanic.response import json, text
+from sanic.exceptions import ServerError
 from cilantro.logger.base import get_logger, overwrite_logger_level
 from cilantro.messages.transaction.contract import ContractTransaction
 from cilantro.messages.transaction.container import TransactionContainer
@@ -16,10 +17,13 @@ log = get_logger(__name__)
 
 @app.route("/", methods=["POST",])
 async def contract_tx(request):
+    if app.queue.full():
+        return text("Queue full! Cannot process any more requests")
     tx_bytes = request.body
     container = TransactionContainer.from_bytes(tx_bytes)
     tx = container.open()
-    app.queue.put(tx)
+    try: app.queue.put_nowait(tx)
+    except: return text("Queue full! Cannot process any more requests")
     # log.important("proc id {} just put a tx in queue! queue = {}".format(os.getpid(), app.queue))
     return text('ok')
 
