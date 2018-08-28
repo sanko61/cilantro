@@ -2,7 +2,6 @@ import nacl
 import nacl.encoding
 import nacl.signing
 
-
 def generate_keys(seed: str=None):
     if seed is not None:
         s = nacl.signing.SigningKey(seed=seed)
