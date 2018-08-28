@@ -12,6 +12,12 @@ import traceback, multiprocessing, os, asyncio
 from multiprocessing import Queue
 from os import getenv as env
 
+import cython
+if cython.compiled:
+    print("Yep, I'm compiled.")
+else:
+    print("Just a lowly interpreted script.")
+
 app = Sanic(__name__)
 log = get_logger(__name__)
 
@@ -38,9 +44,10 @@ def start_webserver(q):
     app.run(host='0.0.0.0', port=WEB_SERVER_PORT, workers=2, debug=False, access_log=False)
 
 if __name__ == '__main__':
-    # if not app.config.REQUEST_MAX_SIZE:
-    #     app.config.update({
-    #         'REQUEST_MAX_SIZE': 5,
-    #         'REQUEST_TIMEOUT': 5
-    #     })
+    import pyximport; pyximport.install()
+    if not app.config.REQUEST_MAX_SIZE:
+        app.config.update({
+            'REQUEST_MAX_SIZE': 5,
+            'REQUEST_TIMEOUT': 5
+        })
     start_webserver(Queue())

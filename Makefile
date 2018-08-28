@@ -31,6 +31,9 @@ clean-logs:
 clean-temps:
 	./scripts/clean-temp-files.sh
 
+clean-cython:
+	./scripts/clean-cython-files.sh
+
 clean: clean-logs clean-temps
 
 pump:

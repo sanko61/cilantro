@@ -13,10 +13,11 @@ Classes include:
 from seneca.engine.storage.mysql_executer import Executer
 
 from multiprocessing import Lock
-import os
+import os,sys
 import math
 from cilantro.logger import get_logger
 from functools import wraps
+from os.path import dirname
 
 # TODO remove this stuff once we can 100% deprecate it
 from sqlalchemy import *
@@ -36,8 +37,8 @@ SCRATCH_PREFIX = 'scratch_'
 
 log = get_logger("DB")
 
-
-constitution_json = json.load(open(os.path.join(os.path.dirname(__file__), 'constitution.json')))
+path = dirname(dirname(dirname(sys.executable)))
+constitution_json = json.load(open(os.path.join(path, 'cilantro/storage/constitution.json')))
 
 
 def get_policy_for_node_list(l, name):

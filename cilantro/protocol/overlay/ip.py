@@ -1,12 +1,13 @@
 import socket, struct
 import requests
 import csv
-import os
+import os, sys
+from os.path import dirname
 
-path = os.path.dirname(__file__)
-WORLD_IP_FILE = '{}/data/world.csv'.format(path)
-NEIGHBOR_IP_FILE = '{}/data/neighborhood.txt'.format(path)
-POPULAR_IP_FILE = '{}/data/popular.txt'.format(path)
+path = dirname(dirname(dirname(sys.executable)))
+WORLD_IP_FILE = '{}/cilantro/protocol/overlay/data/world.csv'.format(path)
+NEIGHBOR_IP_FILE = '{}/cilantro/protocol/overlay/data/neighborhood.txt'.format(path)
+POPULAR_IP_FILE = '{}/cilantro/protocol/overlay/data/popular.txt'.format(path)
 
 def get_public_ip():
     try:

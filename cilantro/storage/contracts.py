@@ -4,11 +4,13 @@ from cilantro.storage.tables import create_table
 import seneca.engine.storage.easy_db as t
 from seneca.execute import execute_contract, get_read_only_contract_obj as get_exports
 import datetime
-import os
+import os, sys
 from functools import lru_cache
 
 
 log = get_logger("ContractsTable")
+
+__file__ = os.path.dirname(sys.executable)
 
 path = os.path.abspath(__file__)
 dir_path = os.path.dirname(path)

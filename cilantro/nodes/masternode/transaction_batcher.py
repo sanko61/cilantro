@@ -16,4 +16,3 @@ class TransactionBatcher(Worker):
             # TODO batch these things and send them out. self.queue is a multiprocessing.Queue object,
             # and all sanic workers are stuffing the data get get from rest requests into this queue
             await asyncio.sleep(2)
-

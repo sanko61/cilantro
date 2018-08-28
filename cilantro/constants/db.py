@@ -1,12 +1,12 @@
 import os
 import configparser
-
+import sys
+from os.path import dirname
 
 settings = configparser.ConfigParser()
 settings._interpolation = configparser.ExtendedInterpolation()
-this_dir = os.path.dirname(__file__)
-db_conf_path = os.path.join(this_dir, '../../db_conf.ini')
-
+path = dirname(dirname(dirname(sys.executable)))
+db_conf_path = os.path.join(path, 'db_conf.ini')
 settings.read(db_conf_path)
 
 # TODO deprecate ad-hoc stuff for VMNet. Use unified approach of loading settings from config file

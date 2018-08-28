@@ -1,4 +1,5 @@
-import os
+import os, sys
+from os.path import dirname, abspath
 
 
 def _read_templates() -> dict:
@@ -12,9 +13,8 @@ def _read_templates() -> dict:
 
         return parts[0]
 
-    path = os.path.abspath(__file__)
-    dir_path = os.path.dirname(path)
-    templates_dir = "{}/../contracts/templates".format(dir_path)
+    path = dirname(dirname(dirname(sys.executable)))
+    templates_dir = "{}/cilantro/contracts/templates".format(path)
 
     templates = {}
 

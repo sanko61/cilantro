@@ -5,7 +5,9 @@ import hashlib
 from os.path import dirname, abspath
 from cilantro.constants.protocol import SIG_FLAGS
 
-os.environ['LOCAL_PATH'] = abspath(dirname(dirname(dirname(__file__))))
+project_path = dirname(dirname(dirname(sys.executable)))
+
+os.environ['LOCAL_PATH'] = abspath(dirname(project_path))
 
 def snake_to_pascal(s):
     s = s.split('-')
@@ -86,7 +88,7 @@ def config_testnet(testnet: dict) -> dict:
 # config = json.load(open(path))
 
 # Add /messages/capnp to Python path. We need these loaded for capnp magic imports
-sys.path.append(os.path.dirname(__file__) + '/messages/capnp')
+sys.path.append(project_path + '/cilantro/messages/capnp')
 
 
 # class Constants:

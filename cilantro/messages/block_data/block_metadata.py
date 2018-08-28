@@ -168,7 +168,7 @@ class BlockMetaDataReply(MessageBase):
         return blockdata_capnp.BlockMetaDataReply.from_bytes_packed(data)
 
     @classmethod
-    def create(cls, block_metas: List[BlockMetaData] or None):
+    def create(cls, block_metas: List[BlockMetaData]):
         """
         Creates a BlockMetaDataReply instance from a list of BlockMetaData objects. If block_metas is empty/None,
         then this indicates that there are no additional blocks to request.
@@ -192,7 +192,7 @@ class BlockMetaDataReply(MessageBase):
         return cls.from_data(struct)
 
     @lazy_property
-    def block_metas(self) -> List[BlockMetaData] or None:
+    def block_metas(self) -> List[BlockMetaData]:
         """
         # TODO docstring
         :return:

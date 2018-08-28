@@ -63,7 +63,7 @@ class Hasher:
             return binary.hex()
 
     @staticmethod
-    def hash(data, algorithm=DEFAULT_ALG, return_bytes=False, digest_len: int=0) -> bytes or str:
+    def hash(data, algorithm=DEFAULT_ALG, return_bytes=False, digest_len: int=0):
         """
         Attempts to automatically cast the data to bytes, and hash it. If digest_len is specified, shake_256 will be
         used (unless algorithm is set to shake_128) to compute a variable size digest.
@@ -96,7 +96,7 @@ class Hasher:
         return Hasher._read_hasher(h, return_bytes=return_bytes, digest_len=digest_len)
 
     @staticmethod
-    def hash_iterable(iterable, algorithm=DEFAULT_ALG, return_bytes=False) -> bytes or str:
+    def hash_iterable(iterable, algorithm=DEFAULT_ALG, return_bytes=False):
         """
         Hashes an iterable by casting all its elements to bytes (if necessary), concatenating them, and then hashing
         the resulting binary
@@ -114,4 +114,3 @@ class Hasher:
         hasher.update(data)
 
         return Hasher._read_hasher(hasher, return_bytes=return_bytes)
-

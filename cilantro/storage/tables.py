@@ -1,8 +1,8 @@
 from cilantro.logger import get_logger
-import json, os, uuid
+import json, os, uuid, sys
 from seneca.engine.storage.mysql_executer import Executer
 from cilantro.constants.db import DB_SETTINGS
-
+from os.path import dirname
 
 
 log = get_logger("DB Creator")
@@ -10,7 +10,8 @@ log = get_logger("DB Creator")
 DB_NAME = DB_SETTINGS['db']
 NUM_SNIPES = 8  # Number of times to attempt to kill a single sleeping DB cursor when resetting db
 
-constitution_json = json.load(open(os.path.join(os.path.dirname(__file__), 'constitution.json')))
+path = dirname(dirname(dirname(sys.executable)))
+constitution_json = json.load(open(os.path.join(path, 'cilantro/storage/constitution.json')))
 
 
 def build_tables(ex, should_drop=True):
@@ -82,4 +83,3 @@ def _reset_db(ex):
     ex.raw('DROP DATABASE IF EXISTS {};'.format(DB_NAME))
     ex.raw('CREATE DATABASE IF NOT EXISTS {};'.format(DB_NAME))
     ex.raw('USE {};'.format(DB_NAME))
-

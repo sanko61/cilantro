@@ -180,7 +180,7 @@ class BlockStorageDriver:
             return block_hash
 
     @classmethod
-    def store_block_from_meta(cls, block: BlockMetaData or NewBlockNotification) -> str:
+    def store_block_from_meta(cls, block: BlockMetaData) -> str:
         """
         Stores a block from a BlockMetaData object. This block must be the child of the current lastest block.
         :param block: The BlockMetaData object containing all of the block's data (excluding the raw transactions)
@@ -208,7 +208,7 @@ class BlockStorageDriver:
 
 
     @classmethod
-    def get_block(cls, number: int=0, hash: str='', include_number=True) -> dict or None:
+    def get_block(cls, number: int=0, hash: str='', include_number=True) -> dict:
         """
         Retrieves a block by its hash, or autoincrement number. Returns a dictionary with a key for each column in the
         blocks table. Returns None if no block with the specified hash/number is found.
@@ -255,7 +255,7 @@ class BlockStorageDriver:
             return block
 
     @classmethod
-    def get_child_block_hashes(cls, parent_hash: str, limit=0) -> List[str] or None:
+    def get_child_block_hashes(cls, parent_hash: str, limit=0) -> List[str]:
         """
         Retrieve a list of child block hashes from a given a parent block. In other words, this method gets the hashes
         for all blocks created "after" the specified block with hash 'parent_hash'.
@@ -311,7 +311,7 @@ class BlockStorageDriver:
             return last_hash
 
     @classmethod
-    def get_raw_transactions(cls, tx_hashes: str or list) -> bytes or None:
+    def get_raw_transactions(cls, tx_hashes) -> bytes:
         """
         Retrieves a single raw transaction from its hash. Returns None if no transaction for that hash can be found
         :param tx_hashes: The hash of the raw transaction to lookup (as a str), or a list of hashes. Hashes should
@@ -321,7 +321,7 @@ class BlockStorageDriver:
         return cls._get_raw_transactions(hashes=tx_hashes, is_block_hashes=False)
 
     @classmethod
-    def get_raw_transactions_from_block(cls, block_hashes: str or list) -> List[bytes] or None:
+    def get_raw_transactions_from_block(cls, block_hashes) -> List[bytes]:
         """
         Retrieves a list of raw transactions associated with a particular block. Returns None if no block with
         the given hash can be found.
@@ -433,7 +433,7 @@ class BlockStorageDriver:
         return Hasher.hash_iterable(ordered_values)
 
     @classmethod
-    def _get_raw_transactions(cls, hashes: str or list, is_block_hashes=False):
+    def _get_raw_transactions(cls, hashes, is_block_hashes: bool=False):
         """
         Helper method to query raw transactions, either from a list of hashes or a single hash. If is_block_hashes=True,
         then the hashes are assumed to refer to block hashes, in which case all the transactions belonging to that

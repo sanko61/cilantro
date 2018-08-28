@@ -126,7 +126,7 @@ class IPUtils:
         return "{}://{}:{}".format(protocol, ip_addr, os.getenv('NETWORK_PORT', port))
 
     @staticmethod
-    def get_vk(vk_url) -> str or False:
+    def get_vk(vk_url) -> str:
         res = re.match(IPUtils.url_pattern, vk_url)
         protocol, vk, port = res.groups()
 
@@ -135,7 +135,7 @@ class IPUtils:
         return False
 
     @staticmethod
-    def get_ip(ip_url) -> str or False:
+    def get_ip(ip_url) -> str:
         res = re.match(IPUtils.url_pattern, ip_url)
         try:
             protocol, ip, port = res.groups()
