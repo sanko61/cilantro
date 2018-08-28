@@ -124,7 +124,7 @@ class Network(object):
             log.info('Network shutting down gracefully.')
 
     def connection_drop(self, node):
-        if self.event_sock: self.event_sock.send_json({'event':'disconect', 'ip':node.ip})
+        if self.event_sock: self.event_sock.send_json({'event':'disconect', 'ip':node.ip, 'vk': self.ironhouse.pk2vk.get(node.public_key) })
         callback = ReactorCommand.create_callback(
             callback=StateInput.CONN_DROPPED,
             ip=node.ip
@@ -141,7 +141,7 @@ class Network(object):
             conn.connect(addr)
             self.poll.register(conn.fileno(), POLLIN)
             log.info("[CLIENT SIDE] Client ({}, {}) connected".format(*addr))
-            if self.event_sock: self.event_sock.send_json({'event':'connected', 'addr': addr})
+            if self.event_sock: self.event_sock.send_json({'event':'connected', 'ip': addr[0], 'vk': self.ironhouse.pk2vk.get(node.public_key)})
             return conn
         except Exception as e:
             del self.connections[conn.fileno()]
