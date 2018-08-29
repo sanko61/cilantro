@@ -6,15 +6,13 @@ from seneca.execute import execute_contract, get_read_only_contract_obj as get_e
 import datetime
 import os, sys
 from functools import lru_cache
-
+from os.path import dirname
 
 log = get_logger("ContractsTable")
 
-__file__ = os.path.dirname(sys.executable)
-
-path = os.path.abspath(__file__)
+path = os.path.abspath(dirname(dirname(sys.executable)))
 dir_path = os.path.dirname(path)
-CONTRACTS_DIR = "{}/../contracts/lib".format(dir_path)
+CONTRACTS_DIR = "{}/cilantro/contracts/lib".format(dir_path)
 
 GENESIS_AUTHOR = 'default_cilantro_contract'
 GENESIS_DATE = datetime.datetime(datetime.MINYEAR, 1, 1)
