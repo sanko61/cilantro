@@ -85,7 +85,7 @@ asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
 class SubBlockBuilder:
     def __init__(self, signing_key, witness_list, url, sbb_index):
-        self.log = get_logger("SubBlockBuilder_{}".format(sb_index))
+        self.log = get_logger("SubBlockBuilder_{}".format(sbb_index))
         # Comment out below for more granularity in debugging
         # self.log.setLevel(logging.INFO)
 
@@ -104,7 +104,7 @@ class SubBlockBuilder:
         self.url = url
         self.sbb_index = sbb_index
         self.block_num = (int) sbb_index / 16       # hard code this for now
-        self.sub_block_num = (int) sb_index % 16
+        self.sub_block_num = (int) sbb_index % 16
         self.num_txs = 0
         self.num_sub_blocks = 0
         self.tasks = []
@@ -118,7 +118,7 @@ class SubBlockBuilder:
         self.verifying_key = wallet.get_vk(self.signing_key)
         skg = SigningKey(seed=bytes.fromhex(sk))
         self.vk = skg.verify_key.encode().hex()
-        self.public_key = self.vk2pk(self.vk)
+        self.public_key = ZmqAPI.vk2pk(self.vk)
         self.private_key = crypto_sign_ed25519_sk_to_curve25519(skg._signing_key).hex()
         priv = PrivateKey(bytes.fromhex(self.private_key))
         publ = priv.public_key
@@ -151,10 +151,10 @@ class SubBlockBuilder:
         for ip, value in self.witness_table:
             witness_vk = value[0]
             url = "{}:{}".format(ip, PUB_SUB_PORT)
-            socket = self._add_sub(
-                                   url=url,
-                                   filter=str(WITNESS_DELEGATE_FILTER),
-                                   vk=witness_vk)
+            socket = ZmqAPI.add_sub(
+                                    url=url,
+                                    filter=str(WITNESS_DELEGATE_FILTER),
+                                    vk=witness_vk)
             self.witness_table[ip].append(socket)
             self.tasks.append(self._listen_to_witness(socket, url))
             self.log.debug("Added sub connection to witness at ip:{} socket:{}"
@@ -312,30 +312,3 @@ class SubBlockBuilder:
 
         self.log.warning("Closing event loop")
         self.loop.call_soon_threadsafe(self.loop.stop)
-
-    def vk2pk(self, vk):
-        return encode(VerifyKey(bytes.fromhex(vk)).to_curve25519_public_key()._public_key)
-
-    # could this be as part of socket/communication utils ??
-    def _secure_socket(self, sock, curve_serverkey=None):
-        sock.curve_secretkey = self.secret
-        sock.curve_publickey = self.public_key
-        if curve_serverkey:
-            sock.curve_serverkey = curve_serverkey
-        else:
-            sock.curve_server = True
-        return sock
-
-    # could this be as part of zmq utils ??
-    def _add_sub(self, url: str, filter: str, vk: str):
-        assert isinstance(filter, str), "'filter' arg must be a string"
-
-        self.log.notice("Creating subscriber socket to {}".format(url))
-        curve_serverkey = self.vk2pk(vk)
-        socket = self._secure_socket(
-                                     self.context.socket(socket_type=zmq.SUB),
-                                     curve_serverkey=curve_serverkey)
-        socket.connect(url)
-        socket.setsockopt(zmq.SUBSCRIBE, filter.encode())
-        return socket
-
