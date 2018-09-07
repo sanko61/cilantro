@@ -19,12 +19,25 @@
 
     need to decide whether this code will live in delegate.py under Delegate class or 
     Delegate class will contain this class as a data structure and manage this and other stuff
+    
+    1. open my pub sockets
+    2. create my sub sockets
+    3. sub-block builder processes and socket pairs
+    4. router / dealer sockets ?? 
+    5. bind sub sockets to proper pubs
+       main:
+       subs:   masters
+                 new block notification
+               other delegates
+       sbb:
+       subs:  witnesses
 """
 
 from cilantro.storage.db import VKBook
 from cilantro.nodes import BaseNode
 
 MAX_BLOCKS = 4     # can be config parameter
+# MAX_SUB_BLOCK_BUILDERS = 16
 
 # communication
 # From master:
@@ -57,15 +70,13 @@ class BlockManager(BaseNode):
                                     / self.num_blocks
        self.my_sb_index = self.get_my_index() % self.max_sb_builders
 
-       # let's assume base node that tracks overlay process sets a flag to indicate it's boot ready
-       # need to coordinate its boot state with overlay network
-       # once boot ready, it needs to spawn 
-
 
    def run(self):
        
        # build task list first
        self.build_task_list()
+       self.loop.run_until_complete(asyncio.gather(*tasks))
+
 
    def build_task_list(self):
        
@@ -74,26 +85,25 @@ class BlockManager(BaseNode):
        self.sockets.append(socket)
        self.tasks.append(self._listen_to_router(socket))  
 
-       # now build listening tasks to other delegate(s)
+       socket = ZmqAPI.get_socket(self.verifying_key, type=zmq.SUB)
+       self.sockets.append(socket)
+       # now build listening task to other delegate(s)
        for vk in VKBook.get_delegates():
            if vk != self.verifying_key:       # not to itself
-               socket = ZmqAPI.add_sub(vk=vk, filter=DELEGATE_DELEGATE_FILTER)
-               self.sockets.append(socket)
-               self.tasks.append(self._sub_to_delegate(socket, vk))
+               socket.connect(vk=vk)
+       self.tasks.append(self._sub_to_delegate(socket))
 
        # first build master(s) listening tasks
        self.build_masternode_indices()  # builds mn_indices
+       mn_socket = ZmqAPI.get_socket(self.verifying_key, type=zmq.SUB)
+       self.dealer = ZmqAPI.get_socket(self.verifying_key, type=zmq.DEALER)
        for vk, index in self.mn_indices:
            # ip = OverlayInterface::get_node_from_vk(vk)
            # sub connection
-           socket = ZmqAPI.add_sub(vk=vk, filter=MASTERNODE_DELEGATE_FILTER, port=MN_NEW_BLOCK_PUB_PORT)
-           self.sockets.append(socket)
-           self.tasks.append(self._sub_to_master(socket, vk, index)
+           mn_socket.connect(vk=vk, filter=MASTERNODE_DELEGATE_FILTER, port=MN_NEW_BLOCK_PUB_PORT))
 
            # dealer connection
-           socket = ZmqAPI.add_dealer(vk)
-           self.dealers.append(socket)
-           # self.tasks.append(self._dealer_to_master(socket, vk, index)
+           self.dealers.connect(vk)
            
            # create sbb processes and sockets
            self.sbb_ports[index] = port = 6000 + index       # 6000 -> SBB_PORT 
@@ -101,12 +111,14 @@ class BlockManager(BaseNode):
                                              args=(self.signing_key, self.url,
                                                    self.sbb_ports[index], index))  # we probably don't need to pass port if we pass index
            self.sb_builders[index].start()
-           socket = ctx.socket(socket_type=zmq.PAIR)
-           socket.connect(url)
+           socket = ZmqAPI.get_socket(self.verifying_key, socket_type=zmq.PAIR)
+           socket.connect("{}:{}".format(url, port)))
            self.sockets.append(socket)
            self.tasks.append(self._listen_to_sbb(socket, vk, index)
-           # self.url = "ipc://{}-ReactorIPC-".format(name) + str(random.randint(0, pow(2, 16)))
-           # url = "tcp://172.29.5.1:10200"
+
+       self.sockets.append(mn_socket)
+       self.tasks.append(self._sub_to_master(mn_socket, vk, index)
+       # self.tasks.append(self._dealer_to_master(socket, vk, index))
            
 
    def get_max_number_of_masternodes(self):
@@ -117,23 +129,55 @@ class BlockManager(BaseNode):
        for index, vk in enumerate(VKBook.get_masternodes()):
           self.mn_indices[vk] = index
        
-   def build_sbb_sockets(self):
-      # make 
-      for index in range(len(VKBook.get_masternodes())
-
    async def _listen_to_router(socket):
+       # Events: ??
+       pass
+       
 
-   async def _sub_to_delegate(socket, vk):
+   async def _sub_to_delegate(self, socket, vk):
        # Events:
-       # 1. publish sub-block
+       # 1. receive merkle subtree
+       while True:
+          event = await socket->recv_event()
+          
+          if event == MERKLE_SUB_BLOCK:
+              self.recv_merkle_tree(event)
+          # elif  
+       
 
-   async def _sub_to_master(socket, mn_vk, mn_index):
+   async def _sub_to_master(self, socket, mn_vk, mn_index):
        # Events:
-       # 1. New block notification
+       # 1. recv new block notification
+       last_block_hash, last_timestamp = self.get_latest_block_hash_timestamp()
+       next_block = {}
+
+       while True:
+          event = await socket->recv_event()
+          
+          if event == NEW_BLOCK:
+             block_hash, timestamp = self.fetch_hash_timestamp(event)
+             if (block_hash == last_block_hash) or (timestamp < last_timestamp):
+                 continue
+             num = next_block.get(block_hash, 0) + 1
+             if (num == self.quorum):
+                 self.update_db(event)
+                 next_block = {}
+             else:
+                 next_block[block_hash] = num
+             
+            
+
 
    async def _listen_to_sbb(socket, vk, index):
        # Events:
-       # 1. Skip sub_block
+       # 1. recv merkle sub-block from SB builders
+       while True:
+          event = await socket->recv_event()
+          
+          if event == MERKLE_SUB_BLOCK:
+              if index == self.my_sb_index:  # responsbile for this sub-block
+                  self.handle_sub_block(event)   # verify and publish to masters and other delegates
+          # elif  
 
    def get_my_index(self):
       for index, vk in enumerate(VKBook.get_delegates()):
@@ -142,13 +186,18 @@ class BlockManager(BaseNode):
 
    def send_make_block(self, block_num):
 
-   async def recv_sb_merkle_sig(self):
-       # need to keep in an array based on sbb_index.
-       # need to resolve differences across sub-blocks in the same order
-       # once the sub-tree that it is responsible for is resolved, then send its MS to master nodes and other delegates
 
-   async def recv_sb_merkle_sigs_from_other_delegates(self):
-       # perhaps can be combined with the above,
-       # verify with its copy and matches, then send the vote to masters
-       # only need to keep this until its own sub-tree is ready
+   def handle_sub_block(self, sub_block, index):
+       # resolve conflicts if any with previous sub_blocks
+       sub_block = self.resolve_conflicts(sub_block, index)
+       if index == self.my_sb_index:
+           self.publish_sub_block(sub_block)  # to masters and other delegates
+       # keep it in 
+       self.save_and_vote(sub_block)
 
+
+   def recv_merkle_tree(self, merkle_sig):
+       self.parent.pending_sigs.append(merkle_sig)
+       # check to see if it matches my copy
+       # if not matched, then do trust work and/or resolve work
+  
