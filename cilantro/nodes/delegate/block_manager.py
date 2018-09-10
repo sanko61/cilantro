@@ -36,8 +36,9 @@
 from cilantro.storage.db import VKBook
 from cilantro.nodes import BaseNode
 
+MAX_NUM_MASTERS = 64
 MAX_BLOCKS = 4     # can be config parameter
-# MAX_SUB_BLOCK_BUILDERS = 16
+MAX_SUB_BLOCK_BUILDERS = 16
 
 # communication
 # From master:
@@ -66,9 +67,10 @@ class BlockManager(BaseNode):
        # self.num_blocks = int(self.num_mnodes / MAX_SUB_BLOCK_BUILDERS + 1)
        self.num_blocks = MAX_BLOCKS if MAX_BLOCKS < self.num_mnodes
                                     else self.num_mnodes
-       self.max_sb_builders = (int) (self.num_mnodes + self.num_blocks - 1)
-                                    / self.num_blocks
-       self.my_sb_index = self.get_my_index() % self.max_sb_builders
+       self.sub_blocks_per_block = (int)(self.num_mnodes + self.num_blocks - 1)
+                                        / self.num_blocks
+       self.num_sb_builders = min(MAX_SUB_BLOCK_BUILDERS, self.sub_blocks_per_block)
+       self.my_sb_index = self.get_my_index() % self.sub_blocks_per_block
 
 
    def run(self):
@@ -104,7 +106,11 @@ class BlockManager(BaseNode):
 
            # dealer connection
            self.dealers.connect(vk)
-           
+
+       self.sockets.append(mn_socket)
+       self.tasks.append(self._sub_to_master(mn_socket, vk, index)
+
+       for index in range(self.num_sb_builders):
            # create sbb processes and sockets
            self.sbb_ports[index] = port = 6000 + index       # 6000 -> SBB_PORT 
            self.sb_builders[index] = Process(target=SubBlockBuilder,
@@ -116,8 +122,6 @@ class BlockManager(BaseNode):
            self.sockets.append(socket)
            self.tasks.append(self._listen_to_sbb(socket, vk, index)
 
-       self.sockets.append(mn_socket)
-       self.tasks.append(self._sub_to_master(mn_socket, vk, index)
        # self.tasks.append(self._dealer_to_master(socket, vk, index))
            
 
@@ -165,8 +169,6 @@ class BlockManager(BaseNode):
              else:
                  next_block[block_hash] = num
              
-            
-
 
    async def _listen_to_sbb(socket, vk, index):
        # Events:
