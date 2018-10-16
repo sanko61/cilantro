@@ -21,5 +21,6 @@ yarl==1.1.0
 vprof
 docker
 dill
+rpcudp
 -e git://github.com/Lamden/vmnet.git#egg=vmnet
 -e git://github.com/Lamden/seneca.git#egg=seneca
