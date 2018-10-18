@@ -5,6 +5,7 @@ import random
 import pickle
 import asyncio
 import logging
+import time
 
 from cilantro.constants.overlay_network import *
 from cilantro.constants.ports import DHT_PORT
@@ -19,6 +20,10 @@ from cilantro.protocol.overlay.auth import Auth
 
 from cilantro.logger.base import get_logger
 log = get_logger(__name__)
+
+from cilantro.storage.db import VKBook
+VK_DIGEST_MAP = {digest(vk): vk for vk in VKBook.get_all()}
+
 
 class Network(object):
     """
@@ -146,16 +151,45 @@ class Network(object):
             log.debug('"{}" found in cache resolving to {}'.format(vk, node))
             return node.ip
         else:
-            nearest = self.protocol.router.findNeighbors(Node(digest(vk)))
-            spider = VKSpiderCrawl(self.protocol, self.node, nearest,
+            desired_id = digest(vk)
+            neighbors = self.protocol.router.findNeighbors(Node(desired_id))
+            spider = VKSpiderCrawl(self.protocol, self.node, neighbors,
                                      self.ksize, self.alpha)
-            node = await spider.find(nodeid=digest(vk))
+            spider = NodeSpiderCrawl(self.protocol, self.node, neighbors,
+                                     self.ksize, self.alpha)
+
+            start = time.time()
+            nearest = await spider.find()
+            duration = round(time.time() - start, 2)
+            log.spam("({}s elapsed) Looking up VK {} return nearest neighbors {}".format(duration, vk, nearest))
+
+            for n in nearest:
+                # TODO instead of throwing an assert, we should handle this bad actor properly
+                assert n.id in VK_DIGEST_MAP, "Node with id {} not found in VK_DIGEST_MAP {}".format(n.id, VK_DIGEST_MAP)
+                n.vk = VK_DIGEST_MAP[n.id]
+                log.spam("looking up vk {} found a nearby node with vk {}".format(vk, n.vk))
+
+            log.important3("({}s elapsed) Looking up VK {} return nearest neighbors {}".format(duration, vk, nearest))  # TODO change log lvl
+            desired_node = list(filter(lambda n: n.vk == vk, nearest))
+            node = desired_node[0] if desired_node else None
+
+            # END DEBUG
             if node:
                 log.debug('"{}" resolved to {}'.format(vk, node))
                 return node.ip
             else:
                 log.warning('"{}" cannot be resolved'.format(vk))
                 return None
+            # nearest = self.protocol.router.findNeighbors(Node(digest(vk)))
+            # spider = VKSpiderCrawl(self.protocol, self.node, nearest,
+            #                          self.ksize, self.alpha)
+            # node = await spider.find(nodeid=digest(vk))
+            # if node:
+            #     log.debug('"{}" resolved to {}'.format(vk, node))
+            #     return node.ip
+            # else:
+            #     log.warning('"{}" cannot be resolved'.format(vk))
+            #     return None
 
     async def get(self, key):
         """
