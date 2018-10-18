@@ -21,7 +21,7 @@ class TestLargeNetwork(MPTestCase):
 
     @vmnet_test
     def test_2_2_4(self):
-        """
+        """ 
         Tests creating a network with 2 Masternodes, 2 Witnesses, and 4 Delegates. Ensures everyone can connect to
         each other.
         """
