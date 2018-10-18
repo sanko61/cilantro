@@ -199,7 +199,7 @@ class Network(object):
                 log.success('"{}" resolved to {}'.format(vk, node))
                 return node.ip
             else:
-                log.warning('"{}" cannot be resolved'.format(vk))
+                log.fatal('"{}" cannot be resolved'.format(vk))  # TODO make this a warning
                 return None
             # nearest = self.protocol.router.findNeighbors(Node(digest(vk)))
             # spider = VKSpiderCrawl(self.protocol, self.node, nearest,
