@@ -16,7 +16,7 @@ def config_sub(test_obj):
 
 
 class TestLargeNetwork(MPTestCase):
-    config_file = '{}/cilantro/vmnet_configs/cilantro-nodes-4.json'.format(CILANTRO_PATH)
+    config_file = '{}/cilantro/vmnet_configs/cilantro-nodes-8.json'.format(CILANTRO_PATH)
     log_lvl = 0
 
     @vmnet_test
