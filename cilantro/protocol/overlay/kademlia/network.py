@@ -21,8 +21,20 @@ from cilantro.protocol.overlay.auth import Auth
 from cilantro.logger.base import get_logger
 log = get_logger(__name__)
 
+# TODO put this stuff in utils or something
 from cilantro.storage.db import VKBook
 VK_DIGEST_MAP = {digest(vk): vk for vk in VKBook.get_all()}
+def add_vks(nodes):
+    for n in nodes:
+        # TODO instead of throwing an assert, we should handle this bad actor properly
+        assert n.id in VK_DIGEST_MAP, "Node with id {} not found in VK_DIGEST_MAP {}".format(n.id, VK_DIGEST_MAP)
+        n.vk = VK_DIGEST_MAP[n.id]
+        # log.spam("looking up vk {} found a nearby node with vk {}".format(vk, n.vk))
+
+def get_desired_node(vk, nodes):
+    desired_node = list(filter(lambda n: n.vk == vk, nodes))
+    node = desired_node[0] if desired_node else None
+    return node
 
 
 class Network(object):
@@ -142,6 +154,7 @@ class Network(object):
             nodeid, vk = result[1]
             return Node(nodeid, addr[0], addr[1], vk)
 
+    # TODO clean up this logic and make it more efficient
     async def lookup_ip(self, vk):
         log.spam('Attempting to look up node with vk="{}"'.format(vk))
         if Auth.vk == vk:
@@ -153,24 +166,33 @@ class Network(object):
         else:
             desired_id = digest(vk)
             neighbors = self.protocol.router.findNeighbors(Node(desired_id))
+            add_vks(neighbors)
+
+            # First check if the ID is already in our neighbors
+            node = get_desired_node(vk, neighbors)
+            if node:
+                log.important("VK {} already found in routing table".format(vk))
+                return node.ip
+
             spider = NodeSpiderCrawl(self.protocol, self.node, neighbors,
                                      self.ksize, self.alpha)
-
-            start = time.time()
             log.spam("Starting VK lookup with neighbors {}".format(neighbors))
+            start = time.time()
             nearest = await spider.find()
             duration = round(time.time() - start, 2)
             log.spam("({}s elapsed) Looking up VK {} return nearest neighbors {}".format(duration, vk, nearest))
 
-            for n in nearest:
+            # for n in nearest:
                 # TODO instead of throwing an assert, we should handle this bad actor properly
-                assert n.id in VK_DIGEST_MAP, "Node with id {} not found in VK_DIGEST_MAP {}".format(n.id, VK_DIGEST_MAP)
-                n.vk = VK_DIGEST_MAP[n.id]
-                log.spam("looking up vk {} found a nearby node with vk {}".format(vk, n.vk))
+                # assert n.id in VK_DIGEST_MAP, "Node with id {} not found in VK_DIGEST_MAP {}".format(n.id, VK_DIGEST_MAP)
+                # n.vk = VK_DIGEST_MAP[n.id]
+                # log.spam("looking up vk {} found a nearby node with vk {}".format(vk, n.vk))
+            add_vks(nearest)
 
             log.important3("({}s elapsed) Looking up VK {} return nearest neighbors {}".format(duration, vk, nearest))  # TODO change log lvl
-            desired_node = list(filter(lambda n: n.vk == vk, nearest))
-            node = desired_node[0] if desired_node else None
+            node = get_desired_node(vk, nearest)
+            # desired_node = list(filter(lambda n: n.vk == vk, nearest))
+            # node = desired_node[0] if desired_node else None
 
             # END DEBUG
             if node:
