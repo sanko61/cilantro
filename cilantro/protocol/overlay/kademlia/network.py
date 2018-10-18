@@ -174,8 +174,7 @@ class Network(object):
             #     log.important("VK {} already found in routing table".format(vk))
             #     return node.ip
 
-            spider = NodeSpiderCrawl(self.protocol, self.node, neighbors,
-                                     self.ksize, self.alpha)
+            spider = NodeSpiderCrawl(self.protocol, Node(desired_id), neighbors, self.ksize, self.alpha)
             log.spam("Starting VK lookup with neighbors {}".format(neighbors))
             start = time.time()
             nearest = await spider.find()
