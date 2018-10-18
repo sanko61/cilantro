@@ -153,12 +153,11 @@ class Network(object):
         else:
             desired_id = digest(vk)
             neighbors = self.protocol.router.findNeighbors(Node(desired_id))
-            spider = VKSpiderCrawl(self.protocol, self.node, neighbors,
-                                     self.ksize, self.alpha)
             spider = NodeSpiderCrawl(self.protocol, self.node, neighbors,
                                      self.ksize, self.alpha)
 
             start = time.time()
+            log.spam("Starting VK lookup with neighbors {}".format(neighbors))
             nearest = await spider.find()
             duration = round(time.time() - start, 2)
             log.spam("({}s elapsed) Looking up VK {} return nearest neighbors {}".format(duration, vk, nearest))
@@ -175,7 +174,7 @@ class Network(object):
 
             # END DEBUG
             if node:
-                log.debug('"{}" resolved to {}'.format(vk, node))
+                log.success('"{}" resolved to {}'.format(vk, node))
                 return node.ip
             else:
                 log.warning('"{}" cannot be resolved'.format(vk))
