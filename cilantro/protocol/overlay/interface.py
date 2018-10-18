@@ -15,6 +15,10 @@ import asyncio, os, zmq.asyncio, zmq
 from os import getenv as env
 from enum import Enum, auto
 
+import uvloop
+asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+
+
 class OverlayInterface:
     started = False
     log = get_logger('OverlayInterface')
