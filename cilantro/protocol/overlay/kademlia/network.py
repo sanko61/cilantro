@@ -169,10 +169,10 @@ class Network(object):
             add_vks(neighbors)
 
             # First check if the ID is already in our neighbors
-            node = get_desired_node(vk, neighbors)
-            if node:
-                log.important("VK {} already found in routing table".format(vk))
-                return node.ip
+            # node = get_desired_node(vk, neighbors)
+            # if node:
+            #     log.important("VK {} already found in routing table".format(vk))
+            #     return node.ip
 
             spider = NodeSpiderCrawl(self.protocol, self.node, neighbors,
                                      self.ksize, self.alpha)
