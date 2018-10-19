@@ -91,7 +91,7 @@ class TestLargeNetwork(MPTestCase):
         wit_0 = MPPubSubAuth(sk=TESTNET_WITNESSES[0]['sk'], name='[node_3]WITNESS_0', config_fn=config_sub, assert_fn=assert_sub, block_until_rdy=BLOCK)
         wit_1 = MPPubSubAuth(sk=TESTNET_WITNESSES[1]['sk'], name='[node_4]WITNESS_1', config_fn=config_sub, assert_fn=assert_sub, block_until_rdy=BLOCK)
 
-        time.sleep(16*CI_FACTOR)  # Nap while nodes hookup
+        time.sleep(10*CI_FACTOR)  # Nap while nodes hookup
 
         all_nodes = (mn_0, mn_1, wit_0, wit_1)
         all_vks = (TESTNET_MASTERNODES[0]['vk'], TESTNET_MASTERNODES[1]['vk'], TESTNET_WITNESSES[0]['vk'],
@@ -109,13 +109,13 @@ class TestLargeNetwork(MPTestCase):
                 if vk == node_vk: continue
                 n.connect_sub(vk=vk)
 
-        time.sleep(16*CI_FACTOR)  # Allow time for VK lookups
+        time.sleep(10*CI_FACTOR)  # Allow time for VK lookups
 
         # Make each node pub a msg
         for n in all_nodes:
             n.send_pub("hi from {} with ip {}".format(n.name, n.ip).encode())
 
-        self.start(timeout=30)
+        self.start(timeout=15)
 
 
 if __name__ == '__main__':
