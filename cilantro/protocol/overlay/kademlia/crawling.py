@@ -148,7 +148,7 @@ class NodeSpiderCrawl(SpiderCrawl):
         for peerid, response in responses.items():
             response = RPCFindResponse(response)
             if not response.happened():
-                log.critical("(Looking for vk {}) Did not recv RPCFindReponse from peerid {}".format(self.node.vk, peerid))  # TODO change log lvl
+                log.critical("(Looking for vk {}) Did not recv RPCFindReponse from peerid {} with vk {}".format(self.node.vk, peerid, ID_TO_VK_MAP[peerid]))  # TODO change log lvl
                 toremove.append(peerid)
             else:
                 log.info("(Looking for vk {}) pushing nodes to nearest: {}".format(self.node.vk, response.getNodeList()))  # TODO remove
