@@ -60,6 +60,7 @@ class NodeHeap(object):
         if len(peerIDs) == 0:
             return
         nheap = []
+        # TODO why this? Can't we just do a proper heap removal in O(lg(n)) instead of this O(n) business? -- davis
         for distance, node in self.heap:
             if node.id not in peerIDs:
                 heapq.heappush(nheap, (distance, node))

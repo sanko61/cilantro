@@ -40,7 +40,7 @@ class RPCProtocol(asyncio.DatagramProtocol):
         data = umsgpack.unpackb(datagram[21:])
 
         # DEBUG -- TODO DELETE
-        log.notice("received datagram with msg id {}".format(msgID))
+        log.notice("received datagram with msg id {}".format(b64encode(msgID)))
         # END DEBUG
 
         if datagram[:1] == b'\x00':

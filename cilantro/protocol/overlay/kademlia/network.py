@@ -166,7 +166,7 @@ class Network(object):
         else:
             desired_id = digest(vk)
             desired_node = Node(desired_id, vk=vk)
-            neighbors = self.protocol.router.findNeighbors(desired_node)
+            neighbors = self.protocol.router.findNeighbors(desired_node, exclude=self.node)
             add_vks(neighbors)
 
             # First check if the ID is already in our neighbors
