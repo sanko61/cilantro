@@ -19,7 +19,7 @@ class TestLargeNetwork(MPTestCase):
     config_file = '{}/cilantro/vmnet_configs/cilantro-nodes-8.json'.format(CILANTRO_PATH)
     log_lvl = 0
 
-    @vmnet_test
+    @vmnet_test(run_webui=True)
     def test_2_2_4(self):
         """
         Tests creating a network with 2 Masternodes, 2 Witnesses, and 4 Delegates. Ensures everyone can connect to
@@ -69,9 +69,9 @@ class TestLargeNetwork(MPTestCase):
         for n in all_nodes:
             n.send_pub("hi from {} with ip {}".format(n.name, n.ip).encode())
 
-        self.start(timeout=30)
+        self.start(timeout=20)
 
-    # @vmnet_test
+    # @vmnet_test(run_webui=True)
     # def test_2_2(self):
     #     """
     #     Tests creating a network with 2 Masternodes, 2 Witnesses, and 4 Delegates. Ensures everyone can connect to
@@ -120,3 +120,22 @@ class TestLargeNetwork(MPTestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+# FOR LOOKING UP f6a237b07376a4252bc4af21ce5e76fad9e7c180334559d7899a3d9d9dd532ca
+# l = [('82367654d8959521992ebc8603676102a5c346f6b2f748f661d160be7610c015',
+#     [
+#         [663003795778126164802955979159404205349656965073, '172.29.0.4', 20003, '82367654d8959521992ebc8603676102a5c346f6b2f748f661d160be7610c015'],
+#         [1092838824646018356267364973824546943271778925437, '172.29.0.2', 20003, '4d09a915a0b4cac25f5e427fb5e347e0d102697502283bdbc4771b846aaff9e8']
+#     ]),
+#
+#      ('7fed90e37de48736901a3640eda2a2e5837ba23b8dc5993f1bd04733b8e23ca9',
+#       [
+#          [663003795778126164802955979159404205349656965073, '172.29.0.4', 20003, '82367654d8959521992ebc8603676102a5c346f6b2f748f661d160be7610c015'],
+#          [1092838824646018356267364973824546943271778925437, '172.29.0.2', 20003, '4d09a915a0b4cac25f5e427fb5e347e0d102697502283bdbc4771b846aaff9e8']
+#       ]),
+#      (
+#      '4d09a915a0b4cac25f5e427fb5e347e0d102697502283bdbc4771b846aaff9e8',
+#      [
+#          [663003795778126164802955979159404205349656965073, '172.29.0.4', 20003, '82367654d8959521992ebc8603676102a5c346f6b2f748f661d160be7610c015'],
+#          [1092838824646018356267364973824546943271778925437, '172.29.0.2', 20003, '4d09a915a0b4cac25f5e427fb5e347e0d102697502283bdbc4771b846aaff9e8']]
+#      )]

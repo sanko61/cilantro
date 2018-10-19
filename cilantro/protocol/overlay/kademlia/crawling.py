@@ -135,48 +135,29 @@ class NodeSpiderCrawl(SpiderCrawl):
         """
         Handle the result of an iteration in _find.
         """
+        # DEBUG -- TODO DELETE
+        from cilantro.storage.db import VKBook
+        from cilantro.protocol.overlay.kademlia.utils import digest
+        ID_TO_VK_MAP = {digest(vk): vk for vk in VKBook.get_all()}
+
+        resp_objs = [(ID_TO_VK_MAP[peerid], RPCFindResponse(r).getNodeList()) for peerid, r in responses.items()]
+        log.important2("(Looking for vk {}) Node Found: {}".format(self.node.vk, resp_objs))
+        # END DEBUG
+
         toremove = []
         for peerid, response in responses.items():
             response = RPCFindResponse(response)
             if not response.happened():
+                log.critical("(Looking for vk {}) Did not recv RPCFindReponse from peerid {}".format(self.node.vk, peerid))  # TODO change log lvl
                 toremove.append(peerid)
             else:
+                log.info("(Looking for vk {}) pushing nodes to nearest: {}".format(self.node.vk, response.getNodeList()))  # TODO remove
                 self.nearest.push(response.getNodeList())
         self.nearest.remove(toremove)
 
         if self.nearest.allBeenContacted():
             return list(self.nearest)
-        return await self.find()
 
-class VKSpiderCrawl(SpiderCrawl):
-    async def find(self, nodeid=None):
-        """
-        Find the specific node id.
-        """
-        if self.node.id == nodeid:
-            return self.node
-        else:
-            self.nodeid = nodeid
-            return await self._find(self.protocol.callFindNode)
-
-    async def _nodesFound(self, responses):
-        """
-        Handle the result of an iteration in _find.
-        """
-        toremove = []
-        for peerid, response in responses.items():
-            response = RPCFindResponse(response)
-            if not response.happened():
-                toremove.append(peerid)
-            else:
-                self.nearest.push(response.getNodeList())
-        self.nearest.remove(toremove)
-
-        for peer in self.nearest:
-            if self.nodeid == peer.id:
-                return peer
-        if self.nearest.allBeenContacted():
-            return None
         return await self.find()
 
 
