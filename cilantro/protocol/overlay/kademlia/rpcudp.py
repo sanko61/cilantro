@@ -39,6 +39,10 @@ class RPCProtocol(asyncio.DatagramProtocol):
         msgID = datagram[1:21]
         data = umsgpack.unpackb(datagram[21:])
 
+        # DEBUG -- TODO DELETE
+        log.notice("received datagram with msg id {}".format(msgID))
+        # END DEBUG
+
         if datagram[:1] == b'\x00':
             # schedule accepting request and returning the result
             asyncio.ensure_future(self._acceptRequest(msgID, data, address))
