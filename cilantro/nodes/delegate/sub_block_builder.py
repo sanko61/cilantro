@@ -32,7 +32,7 @@ from cilantro.messages.consensus.sub_block_contender import SubBlockContender
 from cilantro.messages.transaction.batch import TransactionBatch
 from cilantro.messages.signals.delegate import MakeNextBlock, DiscardPrevBlock
 
-from cilantro.protocol.interpreter import SenecaInterpreter
+from seneca.interface.client import seneca_client
 from cilantro.protocol import wallet
 from cilantro.protocol.multiprocessing.worker import Worker
 
@@ -64,7 +64,7 @@ class SubBlockBuilder(Worker):
         self.sbb_index = sbb_index
         self.cur_block_index = NUM_BLOCKS - 1  # so it will start at block 0
         self.pending_block_index = 0
-        self.interpreter = SenecaInterpreter(mock=True)
+        self.interpreter = SenecaClient(sbb_idx=sbb_index)
 
         self.tasks = []
 
@@ -205,6 +205,8 @@ class SubBlockBuilder(Worker):
         Creates an Empty Sub Block Contender from a TransactionBatch
         """
         self.log.debug("Empty SBB {} sub block index {}".format(self.sbb_index, sbb_idx))
+        self.interpreter.start_sub_block()
+        self.interpreter.end_sub_block()
         signature = wallet.sign(self.signing_key, bytes.fromhex(input_hash))
         merkle_sig = MerkleSignature.create(sig_hex=signature,
                                             timestamp=str(int(time.time())),
@@ -222,11 +224,13 @@ class SubBlockBuilder(Worker):
         num_txs = len(batch.transactions)
         self.log.debug("True SBB {} sub block index {}".format(self.sbb_index, sbb_idx))
 
+        self.interpreter.start_sub_block()
         for txn in batch.transactions:
-            self.interpreter.interpret(txn)  # this is a blocking call. either async or threads??
+            self.interpreter.run_contract(txn)  # this is a blocking call. either async or threads??
+        self.interpreter.end_sub_block()
 
         # Merkle-ize transaction queue and create signed merkle hash
-        all_tx_queue = self.interpreter.get_tx_queue()
+        all_tx_queue = self.interpreter.get_next_sub_block()
         tx_queue = all_tx_queue[-num_txs:]
         tx_binaries = [tx.serialize() for tx in tx_queue]
 

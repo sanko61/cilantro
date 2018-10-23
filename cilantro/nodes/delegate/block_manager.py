@@ -20,7 +20,6 @@ from cilantro.protocol.multiprocessing.worker import Worker
 from cilantro.utils.lprocess import LProcess
 from cilantro.utils.hasher import Hasher
 from cilantro.utils.utils import int_to_bytes, bytes_to_int
-from cilantro.protocol.interpreter import SenecaInterpreter
 from cilantro.messages.block_data.block_data import BlockData
 from typing import List
 
@@ -72,7 +71,6 @@ class BlockManager(Worker):
         # self.db_state = DBState(BlockStorageDriver.get_latest_block_hash())
         self.db_state = DBState(StorageDriver.get_latest_block_hash())
         self.min_new_block_quorum = 1  # TODO
-        self.interpreter = SenecaInterpreter()
 
         self.log.notice("\nBlockManager initializing with\nvk={vk}\nsubblock_index={sb_index}\n"
                         "num_sub_blocks={num_sb}\nnum_blocks={num_blocks}\nsub_blocks_per_block={sb_per_block}\n"
