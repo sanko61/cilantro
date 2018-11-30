@@ -3,7 +3,7 @@ set -ex
 
 export PYTHONPATH=$(pwd)
 
-if [[ "$CIRCLECI" == "true" ]]
+if [ -z "$CIRCLECI" ]
 then
     chmod 777 ./venv/bin/activate
     ./venv/bin/activate
