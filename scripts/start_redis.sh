@@ -4,11 +4,10 @@ pw=$(python3 ./scripts/random_password.py)
 
 if [ -z "$CIRCLECI" ]
 then
-    echo "Activating virtual env"
-    chmod 777 ./venv/bin/activate
-    ./venv/bin/activate
-    echo "echo 'HELLO HELLO I ADDED THIS TO BASH RC'" >> /root/.bashrc
-    echo "echo 'HELLO HELLO I ADDED THIS TO BASH PROFILE'" >> /root/.bash_profile
+  for package in "seneca" "vmnet"
+  do
+    cp -r ./venv/lib/python3.6/site-packages/$package /usr/local/lib/python3.6/dist-packages
+  done
 fi
 
 # Configure env files

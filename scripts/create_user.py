@@ -5,7 +5,6 @@ import time
 
 time.sleep(1)
 
-time.sleep(2)
 settings = configparser.ConfigParser()
 settings._interpolation = configparser.ExtendedInterpolation()
 db_conf_path = './mn_db_conf.ini'

@@ -1,28 +1,5 @@
 import os
 
-from cilantro.logger.base import get_logger
-log = get_logger("INIT TEST")
-log.critical("XYZ@@@@")
-if os.getenv('HOST_IP'):
-    # import seneca
-    # log.critical("BEFORE seneca file: {}".format(seneca.__file__))
-
-    # log.important("uninstall seneca pip")
-    # os.system("pip3 uninstall seneca")
-    import sys
-    log.important("sys path before append: {}".format(sys.path))
-    # sys.path.append("/app/venv/lib/python3.6/site-packages/seneca")
-    sys.path.insert(0, "/app/venv/lib/python3.6/site-packages")
-    # sys.path = ["/app/venv/lib/python3.6/site-packages", "/app"]
-    # log.critical("Hopefully starting virtual env....")
-    log.important("sys path after append: {}".format(sys.path))
-    # os.system("/app/venv/bin/activate")
-
-    import seneca
-    log.critical("AFTER seneca file: {}".format(seneca.__file__))
-else:
-    log.critical("NOT SOURCING VENV!!!")
-
 from decimal import getcontext
 import sys
 import hashlib
