@@ -4,6 +4,8 @@ import capnp
 from configparser import SafeConfigParser
 from pymongo import MongoClient
 from cilantro.utils.utils import MongoTools
+from cilantro.storage.state import StateDriver
+from cilantro.nodes.masternode.mn_api import StorageDriver
 from cilantro.logger.base import get_logger
 from cilantro.messages.block_data.block_data import GenesisBlockData, BlockData, MessageBase
 from cilantro.protocol import wallet
@@ -24,7 +26,6 @@ class MDB:
     # master
     sign_key = None
     verify_key = None
-    verify_state = None
     # master store db
 
     mn_client = None
@@ -44,8 +45,8 @@ class MDB:
         if self.init_mdb is False:
             MDB.sign_key = s_key
             MDB.verify_key = wallet.get_vk(s_key)
-            MDB.verify_state = prior_state_found
-            self.start_db()
+            verify_state = prior_state_found
+            self.start_db(verify_state = verify_state)
             return
 
         # if prior_state_found is True and self.init_mdb is True:
@@ -56,7 +57,7 @@ class MDB:
         data base mgmt functionality
     '''
     @classmethod
-    def start_db(cls):
+    def start_db(cls, verify_state = None):
         """
             init block store, store_index
         """
@@ -68,9 +69,7 @@ class MDB:
 
         cls.setup_db()
 
-        if cls.verify_state is True:
-            pass
-        else:
+        if verify_state is False:
             cls.init_idx_db = cls.create_genesis_blk()
 
     @classmethod
@@ -107,7 +106,7 @@ class MDB:
     @classmethod
     def reset_db(cls, db='all'):
         cls.drop_db(db)
-        cls.start_db()
+        cls.start_db(verify_state = False)
 
     @classmethod
     def drop_db(cls, db='all'):

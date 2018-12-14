@@ -8,7 +8,8 @@ from os.path import dirname, join
 from vmnet.testcase import BaseNetworkTestCase
 from cilantro.utils.test.mp_test_case import vmnet_test
 from cilantro.constants.testnet import TESTNET_MASTERNODES
-from cilantro.storage.mongo import MDB
+#from cilantro.storage.mongo import MDB
+from cilantro.storage.state import StateDriver
 from cilantro.nodes.masternode.mn_api import StorageDriver
 
 cilantro_path = dirname(dirname(cilantro.__path__[0]))
@@ -32,7 +33,7 @@ def start_mn(verifing_key):
     log.info('Test 1 : init master')
     MasterOps.init_master(key = verifing_key)
     log.info('result query db init state ')
-    MDB.query_db()
+    #MDB.query_db()
     log.info('starting zmq setup')
     ctx = zmq.Context()
     socket = ctx.socket(socket_type=zmq.PAIR)
@@ -62,12 +63,16 @@ def start_mn(verifing_key):
         sub_blocks = [SubBlockBuilder.create(idx=i) for i in range(2)]
         success = StorageDriver.store_block(sub_blocks)
         log.info("wr status {}".format(success))
+
+        success = StateDriver.update_with_block(sub_blocks)
+        log.info("state status {}".format(success))
+
         time.sleep(1)
         blk_id += 1
     log.info('end! writes')
 
     log.info('print DB states')
-    MDB.query_db()
+    #MDB.query_db()
 
     log.info('Test 3: verify lookup api')
     lasthash = StorageDriver.get_latest_block_hash()
