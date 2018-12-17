@@ -1,7 +1,9 @@
 import hashlib
 import re, os
+import capnp
 from decimal import Decimal, getcontext
 from pymongo.cursor import Cursor
+from cilantro.messages.block_data.block_data import BlockData
 
 class Encoder:
     @staticmethod
@@ -187,3 +189,13 @@ class MongoTools:
     def get_doc_ids(cls, results):
         docs = cls.get_results(results)
         return [doc['_id'] for doc in docs]
+
+    # move this to util
+    @classmethod
+    def get_dict(cls, capnp_struct):
+
+        obj = capnp_struct._data.to_dict()
+
+        if isinstance(capnp_struct, BlockData):
+            obj['transactions'] = capnp_struct.indexed_transactions
+        return obj

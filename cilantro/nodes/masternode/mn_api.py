@@ -1,4 +1,4 @@
-from cilantro.storage.mongo import MDB
+from cilantro.utils.utils import MongoTools
 from cilantro.protocol import wallet
 from cilantro.storage.vkbook import VKBook
 from cilantro.nodes.masternode.master_store import MasterOps
@@ -53,7 +53,7 @@ class StorageDriver:
         block_data = BlockData.create(block_hash=block_hash, prev_block_hash=prev_block_hash, block_owners=[],
                                       block_num=blk_num, sub_blocks=sub_blocks)
 
-        block_dict = MDB.get_dict(block_data)
+        block_dict = MongoTools.get_dict(block_data)
         assert (bool(MasterOps.evaluate_wr(entry=block_dict))) is True, "wr to master store failed, dump blk {}"\
             .format(block_dict)
 

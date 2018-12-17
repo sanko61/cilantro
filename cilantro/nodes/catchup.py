@@ -7,6 +7,7 @@ from cilantro.storage.vkbook import VKBook
 from cilantro.storage.state import StateDriver
 from cilantro.nodes.masternode.mn_api import StorageDriver
 from cilantro.storage.mongo import MDB
+from cilantro.utils.utils import MongoTools
 from cilantro.nodes.masternode.master_store import MasterOps
 from cilantro.messages.block_data.block_data import BlockData
 from cilantro.messages.block_data.block_metadata import NewBlockNotification
@@ -196,7 +197,7 @@ class CatchupManager:
 
     def update_received_block(self, block = None):
 
-        block_dict = MDB.get_dict(block)
+        block_dict = MongoTools.get_dict(block)
         if self.store_full_blocks is True:
             update_blk_result = bool(MasterOps.evaluate_wr(entry = block_dict))
             StateDriver.update_with_block(block = block)

@@ -4,8 +4,8 @@ import capnp
 from configparser import SafeConfigParser
 from pymongo import MongoClient
 from cilantro.utils.utils import MongoTools
-from cilantro.storage.state import StateDriver
-from cilantro.nodes.masternode.mn_api import StorageDriver
+# from cilantro.storage.state import StateDriver
+# from cilantro.nodes.masternode.mn_api import StorageDriver
 from cilantro.logger.base import get_logger
 from cilantro.messages.block_data.block_data import GenesisBlockData, BlockData, MessageBase
 from cilantro.protocol import wallet
