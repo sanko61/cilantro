@@ -8,6 +8,7 @@ from os.path import dirname
 from logging.handlers import TimedRotatingFileHandler
 import cilantro
 from vmnet.cloud.aws import AWSCloudWatchHandler
+import multiprocessing
 
 logging.getLogger("paramiko").setLevel(logging.WARNING)
 logging.getLogger('boto3').setLevel(logging.WARNING)
@@ -152,8 +153,10 @@ def get_logger(name=''):
         ColoredStreamHandler()
     ]
 
+    pname = multiprocessing.current_process().name
+
     if os.getenv('VMNET_CLOUD'):
-        filehandlers.append(AWSCloudWatchHandler())
+        filehandlers.append(AWSCloudWatchHandler(pname))
 
     logging.basicConfig(
         format=format,
