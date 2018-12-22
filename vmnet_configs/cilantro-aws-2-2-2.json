@@ -6,7 +6,7 @@
     },
     "aws": {
         "use_dns": true,
-        "use_elastic_ips": true,
+        "use_elastic_ips": false,
         "dns_configuration": {
             "TTL": 20,
             "service": "route53",
