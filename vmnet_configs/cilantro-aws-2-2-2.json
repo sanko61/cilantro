@@ -2,12 +2,19 @@
     "deployment_mode": "testing",
     "environment": {
         "CONSTITUTION_FILE": "2-2-2.json",
-        "ANNIHILATE": true
+        "ANNIHILATE": true,
+        "SSL_ENABLED": "True"
     },
     "aws": {
         "use_dns": true,
         "use_elastic_ips": false,
         "dns_configuration": {
+            "use_ssl": true,
+            "ssl_nodes": [
+                "masternode",
+                "delegate",
+                "witness"
+              ],
             "TTL": 20,
             "service": "route53",
             "domain_name": "theanarchy.net",
