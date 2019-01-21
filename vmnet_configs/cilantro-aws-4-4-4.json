@@ -1,5 +1,6 @@
 {
     "deployment_mode": "production",
+    "deployment_type": "multi-region",
     "environment": {
         "CONSTITUTION_FILE": "4-4-4.json",
         "ANNIHILATE": true,
@@ -91,7 +92,6 @@
                 "repo_url": "https://github.com/Lamden/cilantro.git",
                 "branch": "test-logging",
                 "username": "ubuntu",
-                "security_group": "simple_https",
                 "build_ami": "ami-0f65671a86f061fcd",
                 "instance_type": "t2.medium",
                 "build_instance_type": "t2.large",
@@ -108,7 +108,6 @@
                 "repo_url": "https://github.com/Lamden/cilantro.git",
                 "branch": "test-logging",
                 "username": "ubuntu",
-                "security_group": "simple_https",
                 "build_ami": "ami-0222655b32f6d9d08",
                 "instance_type": "t2.medium",
                 "build_instance_type": "t2.large",
@@ -121,14 +120,33 @@
             }
         }
     },
+
     "services": [
         {
             "name": "delegate",
             "image": "cilantro_base",
-            "count": 4,
+            "count": 2,
             "ports": [
                 443
-            ]
+            ],
+            "platform": {
+                "name": "aws",
+                "region": "us-west-2",
+                "security_group": "simple_https"
+            }
+        },
+        {
+            "name": "delegate",
+            "image": "cilantro_base",
+            "count": 2,
+            "ports": [
+                443
+            ],
+            "platform": {
+                "name": "aws",
+                "region": "us-west-1",
+                "security_group": "simple_https"
+            }
         },
         {
             "name": "witness",
