@@ -3,13 +3,13 @@
     "environment": {
         "CONSTITUTION_FILE": "4-4-4.json",
         "ANNIHILATE": true,
-        "SSL_ENABLED": false
+        "SSL_ENABLED": true
     },
     "aws": {
-        "use_dns": false,
-        "use_elastic_ips": false,
+        "use_dns": true,
+        "use_elastic_ips": true,
         "dns_configuration": {
-            "use_ssl": false,
+            "use_ssl": true,
             "ssl_nodes": [
                 "masternode",
                 "delegate",
@@ -89,7 +89,7 @@
                 "name": "cilantro_base",
                 "repo_name": "cilantro",
                 "repo_url": "https://github.com/Lamden/cilantro.git",
-                "branch": "test-logging",
+                "branch": "friday-pump",
                 "username": "ubuntu",
                 "security_group": "simple_https",
                 "build_ami": "ami-0f65671a86f061fcd",
@@ -106,7 +106,7 @@
                 "name": "cilantro_mn",
                 "repo_name": "cilantro",
                 "repo_url": "https://github.com/Lamden/cilantro.git",
-                "branch": "test-logging",
+                "branch": "friday-pump",
                 "username": "ubuntu",
                 "security_group": "simple_https",
                 "build_ami": "ami-0222655b32f6d9d08",
