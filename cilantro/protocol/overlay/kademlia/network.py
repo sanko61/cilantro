@@ -11,7 +11,6 @@ import zmq, zmq.asyncio
 from cilantro.protocol.overlay.kademlia.protocol import KademliaProtocol
 from cilantro.protocol.overlay.kademlia.utils import digest
 from cilantro.protocol.overlay.kademlia.node import Node
-from cilantro.protocol.overlay.kademlia.crawling import NodeSpiderCrawl
 from cilantro.constants.ports import DHT_PORT
 from cilantro.constants.overlay_network import *
 from cilantro.protocol.overlay.auth import Auth
@@ -53,14 +52,11 @@ class Network(object):
         self.state_fname = '{}-network-state.dat'.format(os.getenv('HOST_NAME', 'node'))
 
         self.loop = loop or asyncio.get_event_loop()
-        # asyncio.set_event_loop(self.loop)
         self.ctx = ctx or zmq.asyncio.Context()
         self.protocol = KademliaProtocol(self.node, self.ksize, self.loop, self.ctx)
 
         self.tasks = [
-            self.protocol.listen(),
-            self.refresh_table(),
-            # self.saveStateRegularly()
+            self.protocol.listen()
         ]
 
     def start(self):
@@ -70,21 +66,6 @@ class Network(object):
 
     def stop(self):
         self.tasks.cancel()
-
-    async def refresh_table(self):
-        log.debug("Refreshing routing table")
-        ds = []
-        for node_id in self.protocol.getRefreshIDs():
-            node = Node(node_id)
-            nearest = self.protocol.router.findNeighbors(node, self.alpha)
-            spider = NodeSpiderCrawl(self.protocol, node, nearest,
-                                     self.ksize, self.alpha)
-            ds.append(spider.find())
-
-        # do our crawling
-        await asyncio.gather(*ds)
-        await asyncio.sleep(3600)
-        await self.refresh_table()
 
     def bootstrappableNeighbors(self):
         """
@@ -116,17 +97,13 @@ class Network(object):
             if addr.vk in processed:
                 continue
             processed.add(addr.vk)
-            result = await self.protocol.callFindNode(addr, self.node)
-            nearest.extend(result)
-        for addr in nearest:
-            if addr.vk in processed:
-                continue
-            processed.add(addr.vk)
-            await self.protocol.callFindNode(addr, self.node, False)
-        
-    async def bootstrap_node(self, addr):
-        result = await self.protocol.ping(addr, self.node.id)
-        return Node(result[1], addr[0], addr[1]) if result[0] else None
+            msgID = await self.protocol.callFindNode(addr, self.node)
+        #     nearest.extend(self.protocol.queue[msgID])
+        # for addr in nearest:
+        #     if addr.vk in processed:
+        #         continue
+        #     processed.add(addr.vk)
+        #     msgID = await self.protocol.callFindNode(addr, self.node, False)
 
     def track_and_inform(self):
         self.protocol.set_track_on()

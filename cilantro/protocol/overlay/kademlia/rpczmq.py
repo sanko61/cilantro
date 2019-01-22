@@ -25,6 +25,7 @@ class RPCProtocol:
         self.loop = loop or asyncio.get_event_loop()
         # asyncio.set_event_loop(self.loop)
         self.ctx = ctx or zmq.asyncio.Context()
+        self.response_queue = {}
 
     async def listen(self):
         """
@@ -36,6 +37,7 @@ class RPCProtocol:
         self.sock = self.ctx.socket(zmq.ROUTER)
         self.sock.setsockopt(zmq.IDENTITY, self.identity)
         self.sock.bind('tcp://*:{}'.format(self.sourceNode.port))
+        self.queue = {}
         log.info("Node %i listening on %s:%i",
                  self.sourceNode.long_id, '0.0.0.0', self.sourceNode.port)
         while True:
@@ -51,11 +53,7 @@ class RPCProtocol:
         log.spam("sending request %s for msg id %s to %s",
                   msg, msgID, addr)
         sock.send_multipart([msg])
-        response = await sock.recv_multipart()
-        data = response[0]
-        res = await self.datagram_received(data, addr)
         sock.close()
-        return res
 
     async def datagram_received(self, data, addr):
         log.spam("received datagram data {} from addr {}".format(data, addr))
@@ -74,7 +72,7 @@ class RPCProtocol:
             # schedule accepting request and returning the result
             await self._acceptRequest(msgID, data, address)
         elif datagram[:1] == b'\x01':
-            return self._acceptResponse(msgID, data, address)
+            self.queue[msgID] = self._acceptResponse(msgID, data, address)
         else:
             # otherwise, don't know the format, don't do anything
             log.spam("Received unknown message from %s, ignoring", address)
@@ -146,7 +144,7 @@ class RPCProtocol:
 
             try:
                 result = await self.send_msg(address, msgID, txdata)
-                return (True, result)
+                return msgID
             except asyncio.TimeoutError:
                 self._timeout(msgID)
                 return (False, None)
