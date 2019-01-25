@@ -6,11 +6,6 @@ from multiprocessing import Process
 import random
 
 
-URL1 = "tcp://127.0.0.1:9001"
-URL2 = "tcp://127.0.0.1:9002"
-URL3 = "tcp://127.0.0.1:9003"
-
-
 async def listen(sock, log):
     log.socket("Starting listening...")
     while True:
@@ -39,25 +34,34 @@ def build_comm(identity: bytes):
     return loop, ctx, sock
 
 
-def start_node(identity, url, homie_urls, homie_ids):
+def start_node(identity, url, external_urls, external_ids):
     log = get_logger("Node[{}]".format(identity.decode()))
     loop, ctx, sock = build_comm(identity=identity)
     log.debug("BINDing to url {}".format(url))
     msg = b'hi its me -- ' + identity
     sock.bind(url)
 
-    for url in homie_urls:
+    for url in external_urls:
         log.debug("CONNECTing to url {}".format(url))
         sock.connect(url)
 
-    loop.run_until_complete(asyncio.gather(listen(sock, log), talk(sock, log, msg, homie_ids)))
+    loop.run_until_complete(asyncio.gather(listen(sock, log), talk(sock, log, msg, external_ids)))
 
 
 if __name__ == '__main__':
-    sender_1 = Process(target=start_node, args=(b'1', URL1, [URL2, URL3], [b'2', b'3']))
-    sender_2 = Process(target=start_node, args=(b'2', URL2, [URL1, URL3], [b'1', b'3']))
-    receiver = Process(target=start_node, args=(b'3', URL3, [URL1, URL2], [b'1', b'2']))
+    ID1, ID2, ID3, ID4, ID5 = b'1', b'2', b'3', b'4', b'5'
+    URL1 = "tcp://127.0.0.1:9001"
+    URL2 = "tcp://127.0.0.1:9002"
+    URL3 = "tcp://127.0.0.1:9003"
+    URL4 = "tcp://127.0.0.1:9004"
+    URL5 = "tcp://127.0.0.1:9005"
+    ALL_IDS = [ID1, ID2, ID3, ID4, ID5]
+    ALL_URLS = [URL1, URL2, URL3, URL4, URL5]
 
-    for p in (sender_1, sender_2, receiver):
+    node1 = Process(target=start_node, args=(ID1, URL1, ALL_URLS, ALL_IDS))
+    node2 = Process(target=start_node, args=(ID2, URL2, ALL_URLS, ALL_IDS))
+    node3 = Process(target=start_node, args=(ID3, URL3, ALL_URLS, ALL_IDS))
+
+    for p in (node1, node2, node3):
         p.start()
 

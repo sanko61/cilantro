@@ -48,6 +48,7 @@ if os.getenv('SSL_ENABLED') == 'True':
     with open(os.path.expanduser("~/.sslconf"), "r") as df:
         ssl = _json.load(df)
 
+
 def _respond_to_request(payload, headers={}, status=200, resptype='json'):
     if resptype == 'json':
         return json(payload, headers=dict(headers, **static_headers), status=status)
@@ -247,8 +248,10 @@ def start_webserver(q):
     app.queue = q
     log.info("Creating REST server on port {}".format(WEB_SERVER_PORT))
     if ssl:
+        log.info("Starting web server on port {} with SSL enabled".format(SSL_WEB_SERVER_PORT))
         app.run(host='0.0.0.0', port=SSL_WEB_SERVER_PORT, workers=NUM_WORKERS, debug=False, access_log=False, ssl=ssl)
     else:
+        log.info("Starting web server on port {} with SSL disabled".format(WEB_SERVER_PORT))
         app.run(host='0.0.0.0', port=WEB_SERVER_PORT, workers=NUM_WORKERS, debug=False, access_log=False)
 
 
