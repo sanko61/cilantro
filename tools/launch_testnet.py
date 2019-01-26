@@ -1,8 +1,8 @@
 NETWORK_SIZE = '4-4-4'
 
 MN_LOG_LVL = 11
-WITNESS_LOG_LVL = 30
-DELEGATE_LOG_LVL = 11
+WITNESS_LOG_LVL = 1
+DELEGATE_LOG_LVL = 1
 SENECA_LOG_LVL = 11
 
 from cilantro.utils.test.testnet_config import set_testnet_config
@@ -25,7 +25,7 @@ detached=True
 
 class TestPump(AWSTestCase):
 
-    NUM_BLOCKS = 2
+    NUM_BLOCKS = 0 
     VOLUME = TRANSACTIONS_PER_SUB_BLOCK * NUM_SB_PER_BLOCK * NUM_BLOCKS  # Number of transactions to dum
     config_file = get_config_file('cilantro-aws-4-4-4.json')
     keep_up = True
