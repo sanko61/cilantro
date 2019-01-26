@@ -16,13 +16,17 @@ async def listen(sock, log):
 
 async def talk(sock, log, msg, receiver_ids):
     log.socket("bout to start talking with msg {}".format(msg.decode()))
+    count = 0
     while True:
-        sleep = random.randint(0, 4)
+        # sleep = random.randint(0, 4)
+        sleep = 5
         log.debug("sleeping for {} seconds before sending message".format(sleep))
         await asyncio.sleep(sleep)
         for id in receiver_ids:  # TODO take a random sample from receiver_ids?
             log.debugv("sending to id {}".format(id.decode()))
+            msg = (msg.decode() + ' #{}'.format(count)).encode()
             sock.send_multipart([id, msg])
+            count +=1
 
 
 def build_comm(identity: bytes):
@@ -35,7 +39,8 @@ def build_comm(identity: bytes):
 
 
 def start_node(identity, url, external_urls, external_ids):
-    log = get_logger("Node[{}]".format(identity.decode()))
+    external_ids.remove(identity)
+    log = get_logger("Node-{}".format(identity.decode()))
     loop, ctx, sock = build_comm(identity=identity)
     log.debug("BINDing to url {}".format(url))
     msg = b'hi its me -- ' + identity
@@ -55,13 +60,17 @@ if __name__ == '__main__':
     URL3 = "tcp://127.0.0.1:9003"
     URL4 = "tcp://127.0.0.1:9004"
     URL5 = "tcp://127.0.0.1:9005"
-    ALL_IDS = [ID1, ID2, ID3, ID4, ID5]
+    ALL_IDS = set([ID1, ID2, ID3, ID4, ID5])
     ALL_URLS = [URL1, URL2, URL3, URL4, URL5]
 
     node1 = Process(target=start_node, args=(ID1, URL1, ALL_URLS, ALL_IDS))
     node2 = Process(target=start_node, args=(ID2, URL2, ALL_URLS, ALL_IDS))
     node3 = Process(target=start_node, args=(ID3, URL3, ALL_URLS, ALL_IDS))
+    node4 = Process(target=start_node, args=(ID4, URL4, ALL_URLS, ALL_IDS))
+    node5 = Process(target=start_node, args=(ID5, URL5, ALL_URLS, ALL_IDS))
 
-    for p in (node1, node2, node3):
+    ALL_NODES = (node1, node2, node3, node4, node5)
+
+    for p in ALL_NODES:
         p.start()
 
