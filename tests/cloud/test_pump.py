@@ -1,8 +1,8 @@
 NETWORK_SIZE = '2-2-2'
 
 MN_LOG_LVL = 11
-WITNESS_LOG_LVL = 30
-DELEGATE_LOG_LVL = 11
+WITNESS_LOG_LVL = 5
+DELEGATE_LOG_LVL = 5
 SENECA_LOG_LVL = 11
 
 RESET_DB = True
@@ -56,19 +56,8 @@ class TestPump(AWSTestCase):
             self.execute_python(nodename, God.run_delegate(i, log_lvl=DELEGATE_LOG_LVL, seneca_log_lvl=SENECA_LOG_LVL,
                                                            reset_db=RESET_DB))
         # Bootstrap pump
-        self.execute_python('mgmt', God.pump_it(rate=self.PUMP_RATE, use_poisson=self.MODEL_AS_POISSON, pump_wait=self.PUMP_WAIT,
-                                               sleep_sometimes=True, active_bounds=(30, 120), sleep_bounds=(20, 30)))
-
-        while True:
-            user_input = input("Enter an integer representing the # of transactions to dump, or 'x' to quit.")
-
-            if user_input.lower() == 'x':
-                log.important("Termination input detected. Breaking")
-                break
-
-            vol = int(user_input) if user_input.isdigit() else self.VOLUME
-            log.important3("Dumpatron dumping {} transactions!".format(vol))
-            self.execute_python('mgmt', God.dump_it(volume=vol), no_kill=True)
+        # self.execute_python('mgmt', God.pump_it(rate=self.PUMP_RATE, use_poisson=self.MODEL_AS_POISSON, pump_wait=self.PUMP_WAIT,
+        #                                        sleep_sometimes=True, active_bounds=(30, 120), sleep_bounds=(20, 30)))
 
 
 if __name__ == '__main__':
