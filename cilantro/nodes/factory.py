@@ -42,6 +42,7 @@ class NodeFactory:
     def _reset_db():
         with SenecaInterface() as interface:
             interface.r.flushall()
+        MDB.reset_db()
         seed_contracts()
 
     @staticmethod

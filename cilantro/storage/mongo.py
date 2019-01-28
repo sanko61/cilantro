@@ -20,6 +20,7 @@ class MDB:
     user = cfg.get('MN_DB', 'username')
     pwd = cfg.get('MN_DB', 'password')
     port = cfg.get('MN_DB', 'port')
+    is_setup = False
 
     # master
     sign_key = None
@@ -107,10 +108,15 @@ class MDB:
         cls.mn_db_tx = cls.mn_client_tx.get_database()
         cls.mn_coll_tx = cls.mn_db_tx['tx']
 
+
+        cls.is_setup = True
+
+
     @classmethod
     def create_genesis_blk(cls):
 
         # create insert genesis blk
+        cls.log.critical('sk={}, vk={}'.format(cls.sign_key, cls.verify_key))
         block = GenesisBlockData.create(sk = cls.sign_key, vk = cls.verify_key)
         cls.init_mdb = cls.insert_block(block_dict=block._data.to_dict())
         assert cls.init_mdb is True, "failed to create genesis block"
@@ -125,6 +131,8 @@ class MDB:
 
     @classmethod
     def reset_db(cls, db='all'):
+        if not cls.is_setup:
+            cls.setup_db()
         cls.drop_db(db)
         cls.start_db()
 
@@ -133,6 +141,7 @@ class MDB:
         if db == 'all':
             cls.mn_client.drop_database(cls.mn_db)
             cls.mn_client_idx.drop_database(cls.mn_db_idx)
+            cls.mn_client_tx.drop_database(cls.mn_db_tx)
             cls.init_mdb = cls.init_idx_db = False
 
     '''

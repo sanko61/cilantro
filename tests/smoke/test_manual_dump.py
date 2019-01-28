@@ -10,7 +10,7 @@ ENABLE_BAD_ACTORS = False
 BAD_ACTOR_SET = {1}  # The indices of delegates who shall misbehave and periodically send bad SubBlockContender
 BAD_SB_SET = {1}  # The indices of the sub-blocks to send bad SubBlockContenders for
 
-RESET_DB = False
+RESET_DB = True
 
 
 from cilantro.utils.test.testnet_config import set_testnet_config
