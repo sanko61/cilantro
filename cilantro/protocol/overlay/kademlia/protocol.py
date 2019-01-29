@@ -19,6 +19,7 @@ class KademliaProtocol(RPCProtocol):
         self.router = RoutingTable(self, ksize, sourceNode)
         self.sourceNode = sourceNode
         self.track_on = False
+        self.tasks = []
 
     def set_track_on(self):
         self.track_on = True
@@ -62,7 +63,7 @@ class KademliaProtocol(RPCProtocol):
         neighbors = self.router.findNode(node)
         return list(map(tuple, neighbors))
 
-    async def callFindNode(self, nodeToAsk, nodeToFind, updateRoutingTable = True):
+    async def callFindNode(self, nodeToAsk, nodeToFind, updateRoutingTable=True):
         address = (nodeToAsk.ip, nodeToAsk.port, self.sourceNode.vk)
         result = await self.find_node(address, self.sourceNode.id,
                                       nodeToFind.vk)

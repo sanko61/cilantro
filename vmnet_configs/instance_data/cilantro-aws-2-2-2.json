@@ -1,0 +1,72 @@
+[
+    {
+        "AmiLaunchIndex": 1,
+        "PublicIpAddress": "18.223.202.51",
+        "Tags": [
+            {
+                "Key": "Name",
+                "Value": "cilantro:dev:witness-run"
+            }
+        ]
+    },
+    {
+        "AmiLaunchIndex": 0,
+        "PublicIpAddress": "3.16.9.6",
+        "Tags": [
+            {
+                "Key": "Name",
+                "Value": "cilantro:dev:witness-run"
+            }
+        ]
+    },
+    {
+        "AmiLaunchIndex": 0,
+        "PublicIpAddress": "3.16.69.25",
+        "Tags": [
+            {
+                "Key": "Name",
+                "Value": "cilantro:dev:mgmt-run"
+            }
+        ]
+    },
+    {
+        "AmiLaunchIndex": 0,
+        "PublicIpAddress": "18.188.60.46",
+        "Tags": [
+            {
+                "Key": "Name",
+                "Value": "cilantro:dev:delegate-run"
+            }
+        ]
+    },
+    {
+        "AmiLaunchIndex": 1,
+        "PublicIpAddress": "3.16.81.51",
+        "Tags": [
+            {
+                "Key": "Name",
+                "Value": "cilantro:dev:delegate-run"
+            }
+        ]
+    },
+    {
+        "AmiLaunchIndex": 1,
+        "PublicIpAddress": "18.191.223.251",
+        "Tags": [
+            {
+                "Key": "Name",
+                "Value": "cilantro:dev:masternode-run"
+            }
+        ]
+    },
+    {
+        "AmiLaunchIndex": 0,
+        "PublicIpAddress": "18.217.172.115",
+        "Tags": [
+            {
+                "Key": "Name",
+                "Value": "cilantro:dev:masternode-run"
+            }
+        ]
+    }
+]

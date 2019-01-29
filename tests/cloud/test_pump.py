@@ -5,7 +5,7 @@ WITNESS_LOG_LVL = 30
 DELEGATE_LOG_LVL = 11
 SENECA_LOG_LVL = 11
 
-RESET_DB = False
+RESET_DB = True
 
 from cilantro.utils.test.testnet_config import set_testnet_config
 set_testnet_config('{}.json'.format(NETWORK_SIZE))

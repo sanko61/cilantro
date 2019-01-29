@@ -119,17 +119,20 @@ class Network(object):
                 continue
             processed.add(addr.vk)
             futures.append(self.protocol.callFindNode(addr, self.node))
-        results = await asyncio.gather(*futures)
+        results, pending = await asyncio.wait(futures, timeout=BOOTSTRAP_TIMEOUT, return_when=asyncio.FIRST_COMPLETED)
         for r in results:
-            if r != None:
-                nearest.extend(r)
+            if r.done():
+                res = r.result()
+                if res:
+                    nearest.extend(res)
         futures = []
         for addr in nearest:
             if addr.vk in processed:
                 continue
             processed.add(addr.vk)
             futures.append(self.protocol.callFindNode(addr, self.node, False))
-        results = await asyncio.gather(*futures)
+        if len(futures) > 0:
+            results, pending = await asyncio.wait(futures, timeout=BOOTSTRAP_TIMEOUT, return_when=asyncio.FIRST_COMPLETED)
 
     def track_and_inform(self):
         self.protocol.set_track_on()
