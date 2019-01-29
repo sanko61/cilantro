@@ -44,6 +44,8 @@ class RPCProtocol:
             data = request[1]
             await self.datagram_received(data, addr)
 
+        log.fatal('Protocol DIED')
+
     async def send_msg(self, addr, msgID, msg):
         sock = self.ctx.socket(zmq.DEALER)
         sock.setsockopt(zmq.IDENTITY, self.identity)

@@ -3,6 +3,7 @@ from cilantro.messages.envelope.envelope import Envelope
 import time, asyncio
 from collections import defaultdict, deque
 from typing import List
+from cilantro.protocol.comm.lsocket import vk_lookup
 
 # How long a Router socket will wait for a PONG after sending a PING. Should be a n^2 - 1 b/c of exponential delays
 # between retries (i.e. we retry in 1, then 2, then 4, then 8 seconds and so on)
@@ -24,12 +25,30 @@ class LSocketRouter(LSocketBase):
         self.recent_pongs = {}  # Tracks last times a PONG was received for each client. Val is epoch time (int)
         self.deferred_msgs = defaultdict(deque)  # Messages that are awaiting a PONG before sent
         self.timeout_futs = {}  # Tracks timeouts for PONG response. Val is asyncio.Future
+        self.previous_connect = None
 
         # TODO what happens tho if you try and send a msg before you have connected to the Router??? Like VK lookup
         # is still in process???
         # 1) we could rely on retries of PING
         # 2) (more complex) we could wait until the VK lookup goes thru before
         # lets go with option 1
+
+    @vk_lookup
+    def connect(self, port: int=8080, protocol: str='tcp', ip: str='', vk: str='', use_previous=False):
+        self.socket.probe_router = 1
+        if self.previous_connect and use_previous:
+            try: self.socket.disconnect(url)
+            except: self.log.spam('Already disconnected')
+            self._connect_or_bind(should_connect=True, **self.previous_connect)
+        else:
+            self.previous_connect = { 'port': port, 'protocol': protocol, 'vk': vk, 'ip': ip }
+            self._connect_or_bind(should_connect=True, port=port, protocol=protocol, ip=ip, vk=vk)
+        url = self._get_url_from_kwargs(**self.previous_connect)
+        asyncio.ensure_future(self.wait_for_connection(url))
+
+    async def wait_for_connection(self, url):
+        msg = await self.socket.recv_multipart()
+        self.log.debugv('Router {} is now connected to {}'.format(msg, url))
 
     def send_envelope(self, env: Envelope, header: bytes=None):
         assert header is not None, "Header must be identity frame when using send on Router sockets. Cannot be None."
@@ -43,6 +62,7 @@ class LSocketRouter(LSocketBase):
             if header not in self.timeout_futs:
                 self.log.debug("No recent contract from client with ID {}. Sending a PING.".format(header))
                 self.timeout_futs[header] = asyncio.ensure_future(self._start_ping_timer(header))
+                self.connect(use_previous=True)
                 self.socket.send_multipart([header, PING])
 
             self.log.debugv("Deferring msg to client with ID {} since we have not had recent contract".format(header))
@@ -60,6 +80,7 @@ class LSocketRouter(LSocketBase):
             self.log.spam("Waiting {} seconds before retrying PING for ID {}".format(wait_time, header))
             await asyncio.sleep(wait_time)
             self.log.debugv("Sending PING retry to ID {}".format(header))
+            self.connect(use_previous=True)
             self.socket.send_multipart([header, PING])
             wait_time *= 2
 

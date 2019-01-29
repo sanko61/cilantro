@@ -96,6 +96,8 @@ class Handshake:
             except Exception as e:
                 cls.log.error(traceback.format_exc())
 
+        cls.log.fatal('Handshake DIED')
+
     @classmethod
     def process_handshake(cls, ip, vk, domain):
         if cls.check_previously_authorized(ip, vk, domain):

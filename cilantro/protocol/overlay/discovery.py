@@ -58,6 +58,8 @@ class Discovery:
             except Exception as e:
                 cls.log.error(traceback.format_exc())
 
+        cls.log.fatal('Discovery DIED')
+
     @classmethod
     async def discover_nodes(cls, start_ip):
         is_masternode = VKBook.is_node_type('masternode', Auth.vk)
