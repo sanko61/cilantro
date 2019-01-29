@@ -158,6 +158,7 @@ class LSocketBase:
 
         cmd_name, args, kwargs = self.pending_lookups.pop(event['event_id'])
         kwargs['ip'] = event['ip']
+        self.conn_tracker[event['vk']][2]['ip'] = kwargs['ip']
         getattr(self, cmd_name)(*args, **kwargs)
 
     def _handle_not_found(self, event: dict):
@@ -165,17 +166,19 @@ class LSocketBase:
         self.log.socket("Could not resolve IP for VK {}".format(event['vk']))
         del self.pending_lookups[event['event_id']]
 
-    def _handle_node_online(self, event: dict):
-        if event['vk'] not in self.conn_tracker:
-            self.log.debugv("Socket never connected to node with vk {}. Ignoring node_online event.".format(event['vk']))
+    def _reconnect(self, vk):
+        if vk not in self.conn_tracker:
+            self.log.warning("Attempted to connect to vk {} not in conn tracker".format(vk))
             return
 
-        cmd_name, args, kwargs = self.conn_tracker[event['vk']]
-        kwargs['ip'] = event['ip']
+        if 'ip' not in self.conn_tracker[vk][2]:
+            self.log.warning("Attempted to connect to vk {} for IP has not resolved yet".format(vk))  # change log lvl
+            return
+
+        cmd_name, args, kwargs = self.conn_tracker[vk]
         url = self._get_url_from_kwargs(**kwargs)
 
-        self.log.info("Node with vk {} and ip {} has come back online. Re-establishing connection for URL {}"
-                      .format(event['vk'], event['ip'], url))
+        self.log.info("Re-establishing connection for URL {}".format(url))
 
         # First disconnect if we are already connected to this peer
         if url in self.active_conns:
@@ -185,6 +188,28 @@ class LSocketBase:
         # TODO remove this else
         else:
             self.log.important("URL {} not in self.active_conns {}".format(url, self.active_conns))
+
+    def _handle_node_online(self, event: dict):
+        if event['vk'] not in self.conn_tracker:
+            self.log.debugv("Socket never connected to node with vk {}. Ignoring node_online event.".format(event['vk']))
+            return
+
+        self.conn_tracker[event['vk']][2]['ip'] = kwargs['ip']
+        self._reconnect(event['vk'])
+        # cmd_name, args, kwargs = self.conn_tracker[event['vk']]
+        # url = self._get_url_from_kwargs(**kwargs)
+        #
+        # self.log.info("Node with vk {} and ip {} has come back online. Re-establishing connection for URL {}"
+        #               .format(event['vk'], event['ip'], url))
+        #
+        # # First disconnect if we are already connected to this peer
+        # if url in self.active_conns:
+        #     self.log.debugv("First disconnecting from URL {} before reconnecting".format(url))
+        #     self.socket.disconnect(url)
+        #
+        # # TODO remove this else
+        # else:
+        #     self.log.important("URL {} not in self.active_conns {}".format(url, self.active_conns))
 
         # We wrap the reconnect in the try/except to ignore 'address already in use' errors from attempting to bind
         # to an address that we already bound to. I know this is mad hacky but its 'works' until we come up

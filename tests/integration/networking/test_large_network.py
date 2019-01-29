@@ -29,9 +29,7 @@ class TestLargeNetwork(MPTestCase):
 
     def config_router(self, node: MPRouterAuth, vk_list: list):
         self.log.test("Configuring node named {}".format(node.name))
-        node.create_router_socket(identity=node.ip.encode(), secure=False)  # TODO change this back to True
-        if node.name == 'node_1':
-            time.sleep(30)
+        node.create_router_socket(identity=node.vk.encode(), secure=False)  # TODO change this back to True
         node.bind_router_socket(ip=node.ip)
         for vk in vk_list:
             if node.vk == vk: continue
@@ -96,10 +94,9 @@ class TestLargeNetwork(MPTestCase):
 
         time.sleep(2*CI_FACTOR)  # Allow time to shut down properly
 
-    @vmnet_test(run_webui=False)  # TODO turn of web UI
+    @vmnet_test(run_webui=True)  # TODO turn of web UI
     def test_router(self):
         def assert_router(test_obj):
-            return
             c_args = test_obj.handle_router_msg.call_args_list
             assert len(c_args) == 4, "Expected 4 messages (one from each node). Instead, got:\n{}".format(c_args)
 
@@ -118,18 +115,22 @@ class TestLargeNetwork(MPTestCase):
         all_nodes = (node1, node2, node3, node4, node5)
 
         self.log.test("Configuring all nodes")
-        for n in all_nodes:
+        for n in all_nodes[1:]:
             self.config_router(n, all_vks)
+
+        time.sleep(8)
+        self.config_router(all_nodes[0], all_vks)
+
 
         # TODO try this without allowing time for VK lookups
         time.sleep(16*CI_FACTOR)  # Allow time for VK lookups
 
         # Everyone sends messages to everyone
         self.log.test("Sending messages from all nodes")
-        for sender in (node1, node2, node3, node4, node5):
-            for receiver in (node1, node2, node3, node4, node5):
+        for sender in all_nodes:
+            for receiver in all_nodes:
                 if sender == receiver: continue
-                sender.send_msg(Poke.create(), receiver.ip.encode())
+                sender.send_msg(Poke.create(), receiver.vk.encode())
 
         self.start(timeout=20)
 
