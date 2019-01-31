@@ -21,13 +21,13 @@ class TestRouterReconnect(MPTestCase):
 
     def config_node(self, node: MPRouterAuth, vk_list: list):
         self.log.test("Configuring node named {}".format(node.name))
-        node.create_router_socket(identity=node.ip.encode(), secure=True)
+        node.create_router_socket(identity=node.vk.encode(), secure=True)
         node.bind_router_socket(ip=node.ip)
         for vk in vk_list:
             if node.vk == vk: continue
             node.connect_router_socket(vk=vk)
 
-    @vmnet_test(run_webui=False)  # TODO turn of web UI
+    @vmnet_test(run_webui=True)  # TODO turn of web UI
     def test_late_joining_router(self):
         def assert_router(test_obj):
             c_args = test_obj.handle_router_msg.call_args_list
@@ -70,7 +70,7 @@ class TestRouterReconnect(MPTestCase):
         for sender in (node1, node2, node3, node4, node5):
             for receiver in (node1, node2, node3, node4, node5):
                 if sender == receiver: continue
-                sender.send_msg(Poke.create(), receiver.ip.encode())
+                sender.send_msg(Poke.create(), receiver.vk.encode())
 
         self.start(timeout=20)
 
@@ -131,7 +131,7 @@ class TestRouterReconnect(MPTestCase):
         for sender in (node1, node2, node3, node4, node5):
             for receiver in (node1, node2, node3, node4, node5):
                 if sender == receiver: continue
-                sender.send_msg(Poke.create(), receiver.ip.encode())
+                sender.send_msg(Poke.create(), receiver.vk.encode())
 
         self.start(timeout=20)
 
@@ -192,7 +192,7 @@ class TestRouterReconnect(MPTestCase):
         for sender in (node1, node2, node3, node4, node5):
             for receiver in (node1, node2, node3, node4, node5):
                 if sender == receiver: continue
-                sender.send_msg(Poke.create(), receiver.ip.encode())
+                sender.send_msg(Poke.create(), receiver.vk.encode())
 
         self.start(timeout=20)
 

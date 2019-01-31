@@ -11,6 +11,9 @@ from cilantro.logger.base import get_logger
 from cilantro.storage.vkbook import VKBook
 from cilantro.protocol.overlay.kademlia.node import Node
 
+import time
+from threading import Thread
+
 import asyncio, os, zmq.asyncio, zmq
 from os import getenv as env
 from enum import Enum, auto
@@ -23,6 +26,7 @@ class OverlayInterface:
 
         self.loop = loop or asyncio.get_event_loop()
         # asyncio.set_event_loop(self.loop)
+
         self.ctx = ctx or zmq.asyncio.Context()
         # reset_auth_folder should always be False and True has to be at highest level without any processes
         Auth.setup(sk_hex=sk_hex, reset_auth_folder=False)
@@ -34,13 +38,18 @@ class OverlayInterface:
             Discovery.listen(),
             Handshake.listen(),
             self.network.protocol.listen(),
-            self.bootup()
+            self.bootup(),
+            # self.check_loop_status() # DEBUG ONLY
         ]
 
     def start(self):
-        self.loop.run_until_complete(asyncio.gather(
-            *self.tasks
-        ))
+        self.futures = asyncio.gather(*self.tasks)
+        self.loop.run_until_complete(self.futures)
+
+    async def check_loop_status(self):
+        while True:
+            self.log.important('Loop is: {}'.format(self.loop))
+            await asyncio.sleep(1)
 
     @property
     def neighbors(self):

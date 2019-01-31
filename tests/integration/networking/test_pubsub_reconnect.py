@@ -21,12 +21,12 @@ class TestPubSubReconnect(MPTestCase):
 
     def config_node(self, node: MPPubSubAuth, sub_list: list):
         self.log.test("Configuring node named {}".format(node.name))
-        node.add_pub_socket(ip=node.ip, secure=True)
-        node.add_sub_socket(secure=True)
+        node.add_pub_socket(ip=node.ip, secure=False)
+        node.add_sub_socket(secure=False)
         for vk in sub_list:
             node.connect_sub(vk=vk)
 
-    @vmnet_test(run_webui=False)  # TODO turn of web UI
+    @vmnet_test(run_webui=True)  # TODO turn of web UI
     def test_late_joining_pubsub(self):
         def assert_sub(test_obj):
             c_args = test_obj.handle_sub.call_args_list

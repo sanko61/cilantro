@@ -36,7 +36,7 @@ class TestRouterSecure(MPTestCase):
         time.sleep(5*CI_FACTOR)
 
         for r in (router1, router2):
-            r.create_router_socket(identity=r.ip.encode(), secure=True)
+            r.create_router_socket(identity=r.vk.encode(), secure=True)
 
         router1.bind_router_socket(ip=router1.ip)
         router2.connect_router_socket(vk=PUB1_VK)
@@ -44,7 +44,7 @@ class TestRouterSecure(MPTestCase):
         # Give time for VK lookup (technically this is not necessary)
         time.sleep(3*CI_FACTOR)
 
-        router2.send_msg(Poke.create(), router1.ip.encode())
+        router2.send_msg(Poke.create(), router1.vk.encode())
 
         self.start(timeout=10*CI_FACTOR)
 
@@ -62,7 +62,7 @@ class TestRouterSecure(MPTestCase):
         time.sleep(5*CI_FACTOR)
 
         for r in (router1, router2):
-            r.create_router_socket(identity=r.ip.encode(), secure=True, name='Router-{}'.format(r.ip))
+            r.create_router_socket(identity=r.vk.encode(), secure=True, name='Router-{}'.format(r.ip))
             r.bind_router_socket(ip=r.ip)
 
         router1.connect_router_socket(vk=PUB2_VK)
@@ -71,8 +71,8 @@ class TestRouterSecure(MPTestCase):
         # Give time for VK lookup (technically this is not necessary)
         time.sleep(3*CI_FACTOR)
 
-        router2.send_msg(Poke.create(), router1.ip.encode())
-        router1.send_msg(Poke.create(), router2.ip.encode())
+        router2.send_msg(Poke.create(), router1.vk.encode())
+        router1.send_msg(Poke.create(), router2.vk.encode())
 
         self.start(timeout=10*CI_FACTOR)
 
@@ -90,13 +90,13 @@ class TestRouterSecure(MPTestCase):
         time.sleep(5*CI_FACTOR)
 
         for r in (router1, router2):
-            r.create_router_socket(identity=r.ip.encode(), secure=True, name='Router-{}'.format(r.ip))
+            r.create_router_socket(identity=r.vk.encode(), secure=True, name='Router-{}'.format(r.ip))
             r.bind_router_socket(ip=r.ip)
 
         router1.connect_router_socket(vk=PUB2_VK)
         router2.connect_router_socket(vk=PUB1_VK)
-        router2.send_msg(Poke.create(), router1.ip.encode())
-        router1.send_msg(Poke.create(), router2.ip.encode())
+        router2.send_msg(Poke.create(), router1.vk.encode())
+        router1.send_msg(Poke.create(), router2.vk.encode())
 
         self.start(timeout=10*CI_FACTOR)
 

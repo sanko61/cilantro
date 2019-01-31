@@ -28,7 +28,6 @@ class Discovery:
             cls.sock.setsockopt(zmq.IDENTITY, cls.host_ip.encode())
             cls.is_connected = False
             if VKBook.is_node_type('masternode', Auth.vk):
-                # cls.discovered_nodes[Auth.vk] = cls.host_ip
                 cls.is_master_node = True
                 cls.is_listen_ready = True
 
@@ -36,8 +35,6 @@ class Discovery:
     async def listen(cls):
         cls.sock.bind(cls.url)
         cls.log.info('Listening to other nodes on {}'.format(cls.url))
-        # if cls.is_listen_ready:
-            # await asyncio.sleep(3)
         while True:
             try:
                 msg = await cls.sock.recv_multipart()
@@ -73,8 +70,9 @@ class Discovery:
                 cls.log.info('Connecting to boot nodes: {}'.format(VKBook.bootnodes))
                 cls.connect(VKBook.bootnodes)
             else:
-                cls.log.info('Connecting to this ip-range: {}'.format(start_ip))
-                cls.connect(get_ip_range(start_ip))
+                ip_range = start_ip if type(start_ip) == list else get_ip_range(start_ip)
+                cls.log.info('Connecting to this ip-range: {} to {}'.format(ip_range[0], ip_range[-1]))
+                cls.connect(ip_range)
             try_count += 1
             if (is_masternode and len(VKBook.get_masternodes()) == 1) or \
                     (len(cls.discovered_nodes) == 0 and is_masternode and cls.is_connected and try_count >= RETRIES_BEFORE_SOLO_BOOT):
@@ -87,59 +85,19 @@ class Discovery:
                     len(cls.discovered_nodes), cls.discovered_nodes
                 ))
                 return True
-            elif try_count >= DISCOVERY_RETRIES:
-                cls.log.info('Did not find enough nodes after {} tries ({}/{}).'.format(
-                    try_count,
-                    len(cls.discovered_nodes),
-                    MIN_BOOTSTRAP_NODES
-                ))
-                return False
+            # elif try_count >= DISCOVERY_RETRIES:
+            #     cls.log.info('Did not find enough nodes after {} tries ({}/{}).'.format(
+            #         try_count,
+            #         len(cls.discovered_nodes),
+            #         MIN_BOOTSTRAP_NODES
+            #     ))
+            #     return False
 
             await asyncio.sleep(DISCOVERY_TIMEOUT)
 
-    # raghu these class methods are not thread-safe. Not sure why we want them to be class methods rather than instance methods
-#    @classmethod
-#    async def discover_nodes(cls, start_ip):
-#        try_count = 0
-#        cls.log.info('Connecting to this ip-range: {}'.format(start_ip))
-#        ips = get_ip_range(start_ip)
-#        while try_count < DISCOVERY_RETRIES:
-#            try_count += 1
-#            for ip in ips:
-#                if ip in cls.connections:
-#                    continue
-#                url = 'tcp://{}:{}'.format(ip, cls.port)
-#                cls.sock.connect(url)
-#                cls.connections[ip] = url
-#                cls.request(ip.encode())
-#                if (len(cls.discovered_nodes) == 1 and Auth.vk in VKBook.get_masternodes()) \
-#                    and try_count >= 2:
-#                    cls.log.important('Bootstrapping as the only masternode.'.format(
-#                        len(cls.discovered_nodes)
-#                    ))
-#                    return True
-#                elif len(cls.discovered_nodes) >= MIN_BOOTSTRAP_NODES:
-#                    cls.log.info('Found {} nodes to bootstrap.'.format(
-#                        len(cls.discovered_nodes)
-#                    ))
-#                    return True
-#            await asyncio.sleep(DISCOVERY_TIMEOUT)
-#        assert try_count >= DISCOVERY_RETRIES:
-#        cls.log.info('Did not find enough nodes after {} tries ({}/{}).'.format(
-#            try_count,
-#            len(cls.discovered_nodes),
-#            MIN_BOOTSTRAP_NODES
-#        ))
-#        return False
-
     @classmethod
     def request(cls, ip):
-        # TODO this is soooo sketch wrapping this in a try/except. Why does it give a 'Could not route host' error??
-        # --davis
-        try:
-            cls.sock.send_multipart([ip, cls.pepper])
-        except Exception as e:
-            cls.log.warning("Got ZMQError sending discovery msg\n{}".format(e))
+        cls.sock.send_multipart([ip, cls.pepper])
 
     @classmethod
     def reply(cls, ip):
@@ -154,6 +112,7 @@ class Discovery:
             if ip == cls.host_ip:
                 continue
             url = 'tcp://{}:{}'.format(ip, cls.port)
-            cls.sock.connect(url)
-            cls.connections[ip] = url
+            if not cls.connections.get(ip):
+                cls.sock.connect(url)
+                cls.connections[ip] = url
             cls.request(ip.encode())

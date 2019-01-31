@@ -23,93 +23,44 @@ class LSocketRouter(LSocketBase):
         # For all 3 of below data structures, the keys are the Router socket ID of a client
         self.recent_pongs = {}  # Tracks last times a PONG was received for each client. Val is epoch time (int)
         self.deferred_msgs = defaultdict(deque)  # Messages that are awaiting a PONG before sent
-        self.timeout_futs = {}  # Tracks timeouts for PONG response. Val is asyncio.Future
         self.ready_sockets = defaultdict(bool)
         self.socket.probe_router = 1
 
     def send_envelope(self, env: Envelope, header: bytes=None):
         assert header is not None, "Header must be identity frame when using send on Router sockets. Cannot be None."
 
-        # If we received a recent PONG, go ahead and send the message immediately
-        if header in self.recent_pongs and time.time() - self.recent_pongs[header] < SESSION_TIMEOUT:
-            self.socket.send_multipart([header, env.serialize()])
-
-        # Otherwise, we need to send a PING and wait for a PONG before sending the envelope
-        else:
-            if header not in self.timeout_futs:
-                self.log.debug("No recent contract from client with ID {}. Sending a PING.".format(header))
-                self.timeout_futs[header] = asyncio.ensure_future(self._start_ping_timer(header))
-
+        if not self.ready_sockets.get(header):
             self.log.debugv("Deferring msg to client with ID {} since we have not had recent contract".format(header))
             self.deferred_msgs[header].append(env.serialize())
+        else:
+            self.socket.send_multipart([header, env.serialize()])
 
-    async def _start_ping_timer(self, header):
-        try:
-            await self.__start_ping_timer(header)
-        except asyncio.CancelledError:
-            pass
-
-    async def __start_ping_timer(self, header):
-        wait_time = 1
-        while wait_time < PING_TIMEOUT:
-            self._reconnect(header.decode())
-
-            # DEBUG
-            if 'ip' not in self.conn_tracker[header.decode()][2]:
-                self.log.warning("ip not resolved for vk {}".format(header.decode()))
-
-            if not self.ready_sockets[header]:
-                self.log.warning("socket not rdy for header {}".format(header))
-            # END DEBUG
-
-            # Wait for empty reply from ZMQ probe option
-            if 'ip' in self.conn_tracker[header.decode()][2] and self.ready_sockets[header]:
-                self.log.debugv("Sending PING retry to ID {}".format(header))
-                self.socket.send_multipart([header, PING])
-
-            self.log.spam("Waiting {} seconds before retrying PING for ID {}".format(wait_time, header))
-            await asyncio.sleep(wait_time)
-            wait_time *= 2
-
-        assert header in self.timeout_futs, "PING_TIMEOUT reached but header {} was delete from timeout_futs {}. so " \
-                                            "(it should have been cancelled)".format(header, self.timeout_futs)
-        # TODO do we have to make sure its not canceled? Can i gaurentee this code wont run if .cancel() is called
-        # on this future??
-
-        self.log.warning("Ping timed out for Router socket to node with id {}".format(id))
-        # TODO -- close connection corresponding to this id if we opened it to clean up and prevent leaks
+    def _handle_node_online(self, event: dict):
+        super()._handle_node_online(event)
+        self.ready_sockets[event['vk'].encode()] = False
 
     def _process_msg(self, msg: List[bytes]) -> bool:
+
         if len(msg) == 2 and msg[1] == b'':
-            self.log.important("Now connected to {}".format(msg[0]))
             self.ready_sockets[msg[0]] = True
+            self.log.important("Received a connect request from {}".format(msg[0]))
+            self.socket.send_multipart([msg[0], b'ack_connect'])
+            self._mark_client_as_online(msg[0])
             return False
+        elif len(msg) == 2 and msg[1] == b'ack_connect':
+            self._mark_client_as_online(msg[0])
+            return False
+        else:
+            self.log.spam("Router RECEIVED msg {}".format(msg))
+            return True
 
         # If message length is not 2, we assume its an IPC msg, and return True.
         # TODO -- more robust logic here. Can we maybe set a flag on the sock indicating its an IPC socket?
         if len(msg) != 2:
             return True
 
-        self._mark_client_as_online(msg[0])  # Mark the client as online, regardless of what message they sent
-
-        if msg[1] == PING or msg[1] == PONG:
-            if msg[1] == PING:
-                self.log.spam("Replying to PING from client with ID {}".format(msg[0]))
-                self.socket.send_multipart([msg[0], PONG])
-            return False
-        else:
-            return True
-
     def _mark_client_as_online(self, client_id: bytes):
         self.log.spam("Marking client with ID {} as online".format(client_id))
-
-        # Remove the timeout future
-        if client_id in self.timeout_futs:
-            self.timeout_futs[client_id].cancel()
-            del self.timeout_futs[client_id]
-
-        # Mark the time this client was seen as available
-        self.recent_pongs[client_id] = time.time()
 
         # Send out any queued msgs
         if client_id in self.deferred_msgs:

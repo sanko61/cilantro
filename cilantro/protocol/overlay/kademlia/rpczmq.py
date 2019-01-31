@@ -47,16 +47,20 @@ class RPCProtocol:
         log.fatal('Protocol DIED')
 
     async def send_msg(self, addr, msgID, msg):
-        sock = self.ctx.socket(zmq.DEALER)
-        sock.setsockopt(zmq.IDENTITY, self.identity)
-        sock.connect('tcp://{}:{}'.format(addr[0], addr[1]))
-        log.spam("sending request %s for msg id %s to %s",
-                  msg, msgID, addr)
-        sock.send_multipart([msg])
-        response = await sock.recv_multipart()
-        data = response[0]
-        res = await self.datagram_received(data, addr)
-        sock.close()
+        try:
+            res = None
+            sock = self.ctx.socket(zmq.DEALER)
+            sock.setsockopt(zmq.IDENTITY, self.identity)
+            sock.connect('tcp://{}:{}'.format(addr[0], addr[1]))
+            log.spam("sending request %s for msg id %s to %s", msg, msgID, addr)
+            sock.send_multipart([msg])
+            response = await asyncio.wait_for(sock.recv_multipart(), timeout=self._waitTimeout)
+            data = response[0]
+            res = await asyncio.wait_for(self.datagram_received(data, addr), timeout=self._waitTimeout)
+        except asyncio.TimeoutError:
+            self._timeout(msgID)
+        finally:
+            sock.close()
         return res
 
     async def datagram_received(self, data, addr):
@@ -114,8 +118,9 @@ class RPCProtocol:
         log.warning("Did not received reply for msg "
                   "id %s within %i seconds", *args)
         # raghu why even set this if we are going to delete it in the next stmt?
-        self._outstanding[msgID][0].set_result((False, None))
-        del self._outstanding[msgID]
+        if self._outstanding.get(msgID): # NOTE it is raising an error when the msgID is not found
+            self._outstanding[msgID][0].set_result((False, None))
+            del self._outstanding[msgID]
 
     def __getattr__(self, name):
         """
@@ -128,13 +133,9 @@ class RPCProtocol:
         func attempts to call a remote method "rpc_{name}",
         passing those args, on a node reachable at address.
         """
-        if name.startswith("_") or name.startswith("rpc_"):
-            return getattr(super(), name)
 
-        try:
+        if name.startswith("_") or name.startswith("rpc_") or hasattr(super(), name):
             return getattr(super(), name)
-        except AttributeError:
-            pass
 
         async def func(address, *args):
             msgID = sha1(os.urandom(32)).digest()
@@ -146,11 +147,8 @@ class RPCProtocol:
             log.spam("calling remote function %s on %s (msgid %s)",
                       name, address, b64encode(msgID))
 
-            try:
-                result = await self.send_msg(address, msgID, txdata)
-                return (True, result)
-            except asyncio.TimeoutError:
-                self._timeout(msgID)
-                return (False, None)
+            result = await self.send_msg(address, msgID, txdata)
+            return (bool(result), result)
+
 
         return func

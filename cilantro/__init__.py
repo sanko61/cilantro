@@ -1,4 +1,4 @@
-import os, sys, hashlib
+import os, sys, hashlib, resource
 from os.path import dirname, abspath, join
 from cilantro.constants.system_config import DECIMAL_PRECISION
 from dotenv import load_dotenv
@@ -15,6 +15,8 @@ sys.path.append(os.path.dirname(__file__) + '/messages/capnp')
 from decimal import getcontext
 getcontext().prec = DECIMAL_PRECISION
 
+RESOURCE_LIMIT = 10000
+resource.setrlimit(resource.RLIMIT_NOFILE, (RESOURCE_LIMIT, RESOURCE_LIMIT))
 
 # Dark hack to block until mongo/redis is ready, courtesy of the one and only mr falcon
 # if not os.getenv('__SERVERS_READY__') and os.getenv('VMNET_DOCKER'):

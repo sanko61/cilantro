@@ -3,7 +3,7 @@ from cilantro.messages.envelope.envelope import Envelope
 from cilantro.protocol.structures.envelope_auth import EnvelopeAuth
 from cilantro.protocol.overlay.auth import Auth
 from cilantro.logger.base import get_logger
-import zmq.asyncio, asyncio, os
+import zmq.asyncio, asyncio, os, time
 
 from collections import defaultdict, deque
 from functools import wraps
@@ -66,6 +66,7 @@ class LSocketBase:
 
         self.ready = True  # If False, all DEFERRED_FUNCS will be suspended until ready. Used by subclasses
         self.handler_added = False  # We use this just for dev sanity checks, to ensure only one handler is added
+        self.socket_mode = None
 
     @vk_lookup
     def connect(self, port: int, protocol: str='tcp', ip: str='', vk: str=''):
@@ -196,24 +197,6 @@ class LSocketBase:
 
         self.conn_tracker[event['vk']][2]['ip'] = kwargs['ip']
         self._reconnect(event['vk'])
-        # cmd_name, args, kwargs = self.conn_tracker[event['vk']]
-        # url = self._get_url_from_kwargs(**kwargs)
-        #
-        # self.log.info("Node with vk {} and ip {} has come back online. Re-establishing connection for URL {}"
-        #               .format(event['vk'], event['ip'], url))
-        #
-        # # First disconnect if we are already connected to this peer
-        # if url in self.active_conns:
-        #     self.log.debugv("First disconnecting from URL {} before reconnecting".format(url))
-        #     self.socket.disconnect(url)
-        #
-        # # TODO remove this else
-        # else:
-        #     self.log.important("URL {} not in self.active_conns {}".format(url, self.active_conns))
-
-        # We wrap the reconnect in the try/except to ignore 'address already in use' errors from attempting to bind
-        # to an address that we already bound to. I know this is mad hacky but its 'works' until we come up
-        # with something more clever --davis
         try:
             getattr(self, cmd_name)(*args, **kwargs)
         except zmq.error.ZMQError as e:
@@ -240,6 +223,9 @@ class LSocketBase:
                 self.socket.curve_server = True
                 Auth.configure_auth(self.manager.auth, self.domain)
             self.socket.bind(url)
+            if self.socket.socket_type == zmq.PUB:
+                # PUB has a non-zero binding time
+                time.sleep(0.5)
 
     def __getattr__(self, item):
         assert hasattr(self.socket, item), "Underlying socket object {} has no attribute named {}".format(self.socket, item)

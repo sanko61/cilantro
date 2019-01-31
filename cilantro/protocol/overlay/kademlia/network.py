@@ -54,6 +54,7 @@ class Network(object):
 
         self.loop = loop or asyncio.get_event_loop()
         # asyncio.set_event_loop(self.loop)
+
         self.ctx = ctx or zmq.asyncio.Context()
         self.protocol = KademliaProtocol(self.node, self.ksize, self.loop, self.ctx)
 
@@ -109,7 +110,7 @@ class Network(object):
         """
 
         log.debug("Attempting to bootstrap node with {} initial contacts: {}".format(len(addrs), addrs))
-
+        assert len(addrs) > 0, 'Addrs is empty, cannot bootstrap to an empty list'
         processed = set()
         processed.add(self.node.vk)
         nearest = []
@@ -119,7 +120,9 @@ class Network(object):
                 continue
             processed.add(addr.vk)
             futures.append(self.protocol.callFindNode(addr, self.node))
+        if len(futures) == 0: return
         results, pending = await asyncio.wait(futures, timeout=BOOTSTRAP_TIMEOUT, return_when=asyncio.FIRST_COMPLETED)
+
         for r in results:
             if r.done():
                 res = r.result()

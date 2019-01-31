@@ -60,7 +60,7 @@ class PubSubAuthTester(Worker):
 
         sock = self.sub_sockets[socket_key]
         sock.connect(port=port, protocol=protocol, vk=vk, ip=ip)
-        time.sleep(2) # TODO for davis
+        # time.sleep(2) # NOTE: this sleep should be on the bind side and be shorter
 
     def start_publishing(self, num_msgs=50, interval=1, filter=b''):
         assert len(self.pub_sockets) > 0, "Must add at least 1 pub socket to start publishing"
