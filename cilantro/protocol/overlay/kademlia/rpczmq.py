@@ -54,8 +54,10 @@ class RPCProtocol:
             sock.connect('tcp://{}:{}'.format(addr[0], addr[1]))
             log.spam("sending request %s for msg id %s to %s", msg, msgID, addr)
             sock.send_multipart([msg])
+            log.spam('waiting for response')
             response = await asyncio.wait_for(sock.recv_multipart(), timeout=self._waitTimeout)
             data = response[0]
+            log.spam('ensuring datagram received')
             res = await asyncio.wait_for(self.datagram_received(data, addr), timeout=self._waitTimeout)
         except asyncio.TimeoutError:
             self._timeout(msgID)
@@ -148,6 +150,7 @@ class RPCProtocol:
                       name, address, b64encode(msgID))
 
             result = await self.send_msg(address, msgID, txdata)
+            log.spam('Request with msg "{}" to {} returned with {}'.format(name, address, (bool(result), result)))
             return (bool(result), result)
 
 

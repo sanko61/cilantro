@@ -50,6 +50,7 @@ class OverlayServer(object):
 
         self.loop = loop or asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
+        # self.loop.set_exception_handler(self.custom_exception_handler)
         self.ctx = ctx or zmq.asyncio.Context()
 
         self.evt_sock = self.ctx.socket(zmq.PUB)
@@ -61,9 +62,19 @@ class OverlayServer(object):
 
         self.interface = OverlayInterface(sk, loop=loop, ctx=ctx)
         self.interface.tasks.append(self.command_listener())
-
+        # self.interface.tasks.append(self.check_loop_status()) # DEBUG ONLY
         if start:
             self.start()
+
+    async def check_loop_status(self):
+        while True:
+            self.log.important2('OverlayServer Loop is: {}'.format(self.loop))
+            await asyncio.sleep(1)
+
+    def custom_exception_handler(self, loop, context):
+        loop.default_exception_handler(context)
+        exception = context.get('exception')
+        self.log.error(context)
 
     def start(self):
         self.interface.start()
@@ -91,6 +102,7 @@ class OverlayServer(object):
 
         authorized = await self.interface.authenticate(ip, vk, domain) \
             if secure == 'True' else True
+
         return {
             'event': 'got_ip' if authorized else 'unauthorized_ip',
             'event_id': event_id,
@@ -162,20 +174,29 @@ class OverlayClient(object):
         self.tasks = [
             self.event_listener(event_handler),
             self.reply_listener(event_handler),
+            # self.check_loop_status() # DEBUG ONLY
         ]
 
         self._ready = False
         if start:
             self.start()
 
+    async def check_loop_status(self):
+        while True:
+            self.log.important2('OverlayClient Loop is: {}'.format(self.loop))
+            await asyncio.sleep(1)
+
     def start(self):
         try:
             asyncio.ensure_future(asyncio.gather(*self.tasks))
             self.loop.run_until_complete(self.block_until_ready())
-        except:
+            self.loop.run_forever()
+        except Exception as e:
             msg = '\nOverlayServer is not ready after {}s...\n'.format(CLIENT_SETUP_TIMEOUT)
             self.log.fatal(msg)
             raise Exception(msg)
+        finally:
+            self.log.fatal('OVERLAY CLIENT STOPPED')
 
     async def block_until_ready(self):
         async def wait_until_ready():

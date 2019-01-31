@@ -48,7 +48,7 @@ class OverlayInterface:
 
     async def check_loop_status(self):
         while True:
-            self.log.important('Loop is: {}'.format(self.loop))
+            self.log.important2('Interface Loop is: {}'.format(self.loop))
             await asyncio.sleep(1)
 
     @property

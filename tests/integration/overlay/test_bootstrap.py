@@ -89,12 +89,12 @@ class TestBootStrap(BaseTestCase):
 
     def test_bootstrap_everyone_bootstrap_using_masternodes(self):
         gs = [
-            [self.ns[1]],
+            [self.ns[0]] + self.ns[2:5],
+            self.ns,
             [self.ns[2]],
-            [self.ns[0]],
-            [self.ns[2]],
-            [self.ns[1]],
-            [self.ns[0]]
+            self.ns[2:3],
+            self.ns[2:4],
+            self.ns[2:5],
         ]
 
         self.execute_python(self.groups['node'][2], wrap_func(run_node, 'delegates', 0, gs[2]))
@@ -102,59 +102,59 @@ class TestBootStrap(BaseTestCase):
         self.execute_python(self.groups['node'][4], wrap_func(run_node, 'witnesses', 0, gs[4]))
         self.execute_python(self.groups['node'][5], wrap_func(run_node, 'witnesses', 1, gs[5]))
 
-        time.sleep(5)
+        time.sleep(10)
         self.execute_python(self.groups['node'][0], wrap_func(run_node, 'masternodes', 0, gs[0]))
         self.execute_python(self.groups['node'][1], wrap_func(run_node, 'masternodes', 1, gs[1]))
         file_listener(self, self.callback, self.timeout, self.timeout_delay)
 
-    def test_bootstrap_everyone_bootstrap_without_directly_bootstraping_any_masternodes(self):
-        self.timeout_delay = 10
-        gs = [
-            [self.ns[2]],
-            [self.ns[3]],
-            [self.ns[5]],
-            [self.ns[4]],
-            [self.ns[3]],
-            [self.ns[2]]
-        ]
+    # NOTE: Supposedly impossible because all nodes are hard-coded
+    # def test_bootstrap_everyone_bootstrap_without_directly_bootstraping_any_masternodes(self):
+    #     gs = [
+    #         [self.ns[2]],
+    #         [self.ns[3]],
+    #         [self.ns[5]],
+    #         [self.ns[4]],
+    #         [self.ns[3]],
+    #         [self.ns[2]]
+    #     ]
+    #
+    #     self.execute_python(self.groups['node'][2], wrap_func(run_node, 'delegates', 0, gs[2]))
+    #     self.execute_python(self.groups['node'][3], wrap_func(run_node, 'delegates', 1, gs[3]))
+    #     self.execute_python(self.groups['node'][4], wrap_func(run_node, 'witnesses', 0, gs[4]))
+    #     self.execute_python(self.groups['node'][5], wrap_func(run_node, 'witnesses', 1, gs[5]))
+    #
+    #     time.sleep(10)
+    #     self.execute_python(self.groups['node'][0], wrap_func(run_node, 'masternodes', 0, gs[0]))
+    #     self.execute_python(self.groups['node'][1], wrap_func(run_node, 'masternodes', 1, gs[1]))
+    #     file_listener(self, self.callback, self.timeout, self.timeout_delay)
 
-        self.execute_python(self.groups['node'][2], wrap_func(run_node, 'delegates', 0, gs[2]))
-        self.execute_python(self.groups['node'][3], wrap_func(run_node, 'delegates', 1, gs[3]))
-        self.execute_python(self.groups['node'][4], wrap_func(run_node, 'witnesses', 0, gs[4]))
-        self.execute_python(self.groups['node'][5], wrap_func(run_node, 'witnesses', 1, gs[5]))
-
-        time.sleep(5)
-        self.execute_python(self.groups['node'][0], wrap_func(run_node, 'masternodes', 0, gs[0]))
-        self.execute_python(self.groups['node'][1], wrap_func(run_node, 'masternodes', 1, gs[1]))
-        file_listener(self, self.callback, self.timeout, self.timeout_delay)
-
-    def test_bootstrap_everyone_bootstrap_with_one_masternode_isolated(self):
-        def timeout_fail():
-            for i, ip in enumerate(self.groups_ips['node']):
-                if i == 1:
-                    self.assertEqual(len(self.node_topology[ip]), 1)
-                else:
-                    self.assertTrue(len(self.node_topology[ip]) >= 2)
-            self._success_msg()
-        self.timeout_delay = 10
-        gs = [
-            [self.ns[3]],
-            [self.ns[1]], # This masternode only finds itself
-            [self.ns[0]],
-            [self.ns[4]],
-            [self.ns[5]],
-            [self.ns[3]]
-        ]
-
-        self.execute_python(self.groups['node'][2], wrap_func(run_node, 'delegates', 0, gs[2]))
-        self.execute_python(self.groups['node'][3], wrap_func(run_node, 'delegates', 1, gs[3]))
-        self.execute_python(self.groups['node'][4], wrap_func(run_node, 'witnesses', 0, gs[4]))
-        self.execute_python(self.groups['node'][5], wrap_func(run_node, 'witnesses', 1, gs[5]))
-
-        time.sleep(5)
-        self.execute_python(self.groups['node'][0], wrap_func(run_node, 'masternodes', 0, gs[0]))
-        self.execute_python(self.groups['node'][1], wrap_func(run_node, 'masternodes', 1, gs[1]))
-        file_listener(self, self.callback, timeout_fail, self.timeout_delay)
+    # NOTE: Supposedly impossible because all nodes are hard-coded
+    # def test_bootstrap_everyone_bootstrap_with_one_masternode_isolated(self):
+    #     def timeout_fail():
+    #         for i, ip in enumerate(self.groups_ips['node']):
+    #             if i == 1:
+    #                 self.assertEqual(len(self.node_topology[ip]), 1)
+    #             else:
+    #                 self.assertTrue(len(self.node_topology[ip]) >= 2)
+    #         self._success_msg()
+    #     gs = [
+    #         [self.ns[3]],
+    #         [self.ns[1]], # This masternode only finds itself
+    #         [self.ns[0]],
+    #         [self.ns[4]],
+    #         [self.ns[5]],
+    #         [self.ns[3]]
+    #     ]
+    #
+    #     self.execute_python(self.groups['node'][2], wrap_func(run_node, 'delegates', 0, gs[2]))
+    #     self.execute_python(self.groups['node'][3], wrap_func(run_node, 'delegates', 1, gs[3]))
+    #     self.execute_python(self.groups['node'][4], wrap_func(run_node, 'witnesses', 0, gs[4]))
+    #     self.execute_python(self.groups['node'][5], wrap_func(run_node, 'witnesses', 1, gs[5]))
+    #
+    #     time.sleep(10)
+    #     self.execute_python(self.groups['node'][0], wrap_func(run_node, 'masternodes', 0, gs[0]))
+    #     self.execute_python(self.groups['node'][1], wrap_func(run_node, 'masternodes', 1, gs[1]))
+    #     file_listener(self, self.callback, timeout_fail, self.timeout_delay)
 
 if __name__ == '__main__':
     unittest.main()

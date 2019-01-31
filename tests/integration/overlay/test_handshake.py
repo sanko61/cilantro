@@ -98,10 +98,13 @@ class TestHandshake(BaseTestCase):
         node_count = len(self.groups['node'])
         self.nodes_complete = set()
         all_vks = [TESTNET_MASTERNODES[0]['vk']] + [TESTNET_MASTERNODES[1]['vk']] + [n['vk'] for n in TESTNET_DELEGATES[:2]]
-        self.execute_python(self.groups['node'][0], wrap_func(masternode, 0, node_count, all_vks))
-        self.execute_python(self.groups['node'][1], wrap_func(masternode, 1, node_count, all_vks))
+
         for idx, node in enumerate(self.groups['node'][2:]):
             self.execute_python(node, wrap_func(delegates, idx, node_count, all_vks))
+
+        time.sleep(10)
+        self.execute_python(self.groups['node'][0], wrap_func(masternode, 0, node_count, all_vks))
+        self.execute_python(self.groups['node'][1], wrap_func(masternode, 1, node_count, all_vks))
 
         file_listener(self, self.callback, self.timeout, 30)
 

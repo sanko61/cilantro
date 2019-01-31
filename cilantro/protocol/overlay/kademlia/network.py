@@ -61,7 +61,7 @@ class Network(object):
         self.tasks = [
             self.protocol.listen(),
             self.refresh_table(),
-            # self.saveStateRegularly()
+            # self.saveStateRegularly(),
         ]
 
     def start(self):
@@ -122,6 +122,7 @@ class Network(object):
             futures.append(self.protocol.callFindNode(addr, self.node))
         if len(futures) == 0: return
         results, pending = await asyncio.wait(futures, timeout=BOOTSTRAP_TIMEOUT, return_when=asyncio.FIRST_COMPLETED)
+        log.spam('Results = {}, pending = {}'.format(results, pending))
 
         for r in results:
             if r.done():

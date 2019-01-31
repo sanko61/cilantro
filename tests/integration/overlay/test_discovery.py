@@ -100,7 +100,13 @@ class TestDiscovery(BaseTestCase):
         for node in data:
             self.nodes_complete.add(node)
         if self.nodes_complete == self.all_nodes:
+            self._success_msg()
             self.end_test()
+
+    def _success_msg(self):
+        self.log.success('=' * 128)
+        self.log.success('\t{} SUCCEEDED\t\t'.format(self.id()))
+        self.log.success('=' * 128)
 
     def timeout(self):
         self.assertEqual(self.nodes_complete, self.all_nodes)
@@ -108,22 +114,19 @@ class TestDiscovery(BaseTestCase):
     def test_discovery_normally(self):
         self.all_nodes = set(self.groups['node'])
         self.nodes_complete = set()
-        self.execute_python(self.groups['node'][0], wrap_func(masternode, 0))
         for idx, node in enumerate(self.groups['node'][2:]):
             self.execute_python(node, wrap_func(delegates, idx))
 
-        time.sleep(5)
+        time.sleep(10)
+        self.execute_python(self.groups['node'][0], wrap_func(masternode, 0))
         self.execute_python(self.groups['node'][1], wrap_func(masternode, 1))
 
-        time.sleep(15*CI_FACTOR)
-
-        file_listener(self, self.callback, self.timeout, 10)
+        file_listener(self, self.callback, self.timeout, 30)
 
     def callback_disjoint(self, data):
         for d in data:
             n = json.loads(d)
             self.nodes_topology[n['node']] = n['discovered']
-        self.log.critical(self.nodes_topology)
 
     def timeout_disjoint(self):
         pass

@@ -93,57 +93,58 @@ class TestBootStrapWithDiscovery(BaseTestCase):
     def setUp(self):
         super().setUp()
         self.all_nodes = set(self.groups['node'])
+        self.ns = self.groups['node']
         self.node_topology = {}
 
     def test_bootstrap_masternodes_last(self):
 
-        self.execute_python(self.groups['node'][2], wrap_func(run_node, 'delegates', 0))
-        self.execute_python(self.groups['node'][3], wrap_func(run_node, 'delegates', 1))
-        self.execute_python(self.groups['node'][4], wrap_func(run_node, 'witnesses', 0))
-        self.execute_python(self.groups['node'][5], wrap_func(run_node, 'witnesses', 1))
+        self.execute_python(self.ns[2], wrap_func(run_node, 'delegates', 0))
+        self.execute_python(self.ns[3], wrap_func(run_node, 'delegates', 1))
+        self.execute_python(self.ns[4], wrap_func(run_node, 'witnesses', 0))
+        self.execute_python(self.ns[5], wrap_func(run_node, 'witnesses', 1))
 
-        time.sleep(5)
-        self.execute_python(self.groups['node'][0], wrap_func(run_node, 'masternodes', 0))
-        time.sleep(5)
-        self.execute_python(self.groups['node'][1], wrap_func(run_node, 'masternodes', 1))
+        time.sleep(10)
+        self.execute_python(self.ns[0], wrap_func(run_node, 'masternodes', 0))
+        time.sleep(10)
+        self.execute_python(self.ns[1], wrap_func(run_node, 'masternodes', 1))
         file_listener(self, self.callback, self.timeout, self.timeout_delay)
 
     def test_bootstrap_masternodes_first(self):
         nodes = self.groups_ips['node']
-        self.execute_python(self.groups['node'][0], wrap_func(run_node, 'masternodes', 0, [nodes[0]]))
-        time.sleep(5)
-        self.execute_python(self.groups['node'][1], wrap_func(run_node, 'masternodes', 1))
-        time.sleep(5)
-        self.execute_python(self.groups['node'][2], wrap_func(run_node, 'delegates', 0))
-        self.execute_python(self.groups['node'][3], wrap_func(run_node, 'delegates', 1))
-        self.execute_python(self.groups['node'][4], wrap_func(run_node, 'witnesses', 0))
-        self.execute_python(self.groups['node'][5], wrap_func(run_node, 'witnesses', 1))
+        self.execute_python(self.ns[0], wrap_func(run_node, 'masternodes', 0, [nodes[0]]))
+        time.sleep(10)
+        self.execute_python(self.ns[1], wrap_func(run_node, 'masternodes', 1))
+        time.sleep(10)
+        self.execute_python(self.ns[2], wrap_func(run_node, 'delegates', 0))
+        self.execute_python(self.ns[3], wrap_func(run_node, 'delegates', 1))
+        self.execute_python(self.ns[4], wrap_func(run_node, 'witnesses', 0))
+        self.execute_python(self.ns[5], wrap_func(run_node, 'witnesses', 1))
 
         file_listener(self, self.callback, self.timeout, self.timeout_delay)
 
     def test_bootstrap_masternodes_sandwich(self):
 
         nodes = self.groups_ips['node']
-        self.execute_python(self.groups['node'][0], wrap_func(run_node, 'masternodes', 0, [nodes[0]]))
-        time.sleep(5)
-        self.execute_python(self.groups['node'][2], wrap_func(run_node, 'delegates', 0))
-        self.execute_python(self.groups['node'][3], wrap_func(run_node, 'delegates', 1))
-        self.execute_python(self.groups['node'][4], wrap_func(run_node, 'witnesses', 0))
-        self.execute_python(self.groups['node'][5], wrap_func(run_node, 'witnesses', 1))
-        time.sleep(5)
-        self.execute_python(self.groups['node'][1], wrap_func(run_node, 'masternodes', 1))
+        self.execute_python(self.ns[0], wrap_func(run_node, 'masternodes', 0, [nodes[0]]))
+        time.sleep(10)
+        self.execute_python(self.ns[2], wrap_func(run_node, 'delegates', 0))
+        self.execute_python(self.ns[3], wrap_func(run_node, 'delegates', 1))
+        self.execute_python(self.ns[4], wrap_func(run_node, 'witnesses', 0))
+        self.execute_python(self.ns[5], wrap_func(run_node, 'witnesses', 1))
+        time.sleep(10)
+        self.execute_python(self.ns[1], wrap_func(run_node, 'masternodes', 1))
 
         file_listener(self, self.callback, self.timeout, self.timeout_delay)
 
     def test_bootstrap_masternodes_race_condition(self):
         nodes = self.groups_ips['node']
-        self.execute_python(self.groups['node'][0], wrap_func(run_node, 'masternodes', 0, [nodes[0]]))
-        self.execute_python(self.groups['node'][1], wrap_func(run_node, 'masternodes', 1, [nodes[1]]))
-        time.sleep(5)
-        self.execute_python(self.groups['node'][2], wrap_func(run_node, 'delegates', 0))
-        self.execute_python(self.groups['node'][3], wrap_func(run_node, 'delegates', 1))
-        self.execute_python(self.groups['node'][4], wrap_func(run_node, 'witnesses', 0))
-        self.execute_python(self.groups['node'][5], wrap_func(run_node, 'witnesses', 1))
+        self.execute_python(self.ns[0], wrap_func(run_node, 'masternodes', 0, [nodes[0]]))
+        self.execute_python(self.ns[1], wrap_func(run_node, 'masternodes', 1, [nodes[1]]))
+        time.sleep(10)
+        self.execute_python(self.ns[2], wrap_func(run_node, 'delegates', 0))
+        self.execute_python(self.ns[3], wrap_func(run_node, 'delegates', 1))
+        self.execute_python(self.ns[4], wrap_func(run_node, 'witnesses', 0))
+        self.execute_python(self.ns[5], wrap_func(run_node, 'witnesses', 1))
 
         file_listener(self, self.callback, self.timeout, self.timeout_delay)
 
