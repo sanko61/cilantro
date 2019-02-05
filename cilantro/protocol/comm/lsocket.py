@@ -13,7 +13,7 @@ from os.path import join
 
 def vk_lookup(func):
     @wraps(func)
-    def _func(self, *args, **kwargs):
+    def _func(self, *args, ipc=False, **kwargs):
         contains_vk = 'vk' in kwargs and kwargs['vk']
         contains_ip = 'ip' in kwargs and kwargs['ip']
 
@@ -29,7 +29,8 @@ def vk_lookup(func):
             self.conn_tracker[kwargs['vk']] = cmd_tuple
 
             # DEBUG -- TODO DELETE
-            # self.log.important3("Adding vk {} to conn tracker with cmd tuple {}".format(kwargs['vk'], cmd_tuple))
+            # self.log.important3("Adding vk {} to conn tracker with cmd tuple {}\nconn_tracker: {}".format(kwargs['vk'], cmd_tuple, self.conn_tracker))
+            # self.log.important3("[vk lookup] self id: {}".format(id(self)))
             # END DEBUG
 
         # If the 'ip' key is already set in kwargs, no need to do a lookup
@@ -191,11 +192,14 @@ class LSocketBase:
             self.log.important("URL {} not in self.active_conns {}".format(url, self.active_conns))
 
     def _handle_node_online(self, event: dict):
+        # self.log.important3("[node online] self id: {}".format(id(self)))
+        # self.log.debugv('Conn tracker = {}'.format(self.conn_tracker))
         if event['vk'] not in self.conn_tracker:
             self.log.debugv("Socket never connected to node with vk {}. Ignoring node_online event.".format(event['vk']))
             return
 
-        self.conn_tracker[event['vk']][2]['ip'] = kwargs['ip']
+        self.conn_tracker[event['vk']][2]['ip'] = event['ip']
+        cmd_name, args, kwargs = self.conn_tracker[event['vk']]
         self._reconnect(event['vk'])
         try:
             getattr(self, cmd_name)(*args, **kwargs)

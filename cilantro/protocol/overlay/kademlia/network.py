@@ -108,7 +108,6 @@ class Network(object):
             addrs: A `list` of (ip, port) `tuple` pairs.  Note that only IP
                    addresses are acceptable - hostnames will cause an error.
         """
-
         log.debug("Attempting to bootstrap node with {} initial contacts: {}".format(len(addrs), addrs))
         assert len(addrs) > 0, 'Addrs is empty, cannot bootstrap to an empty list'
         processed = set()
@@ -136,7 +135,8 @@ class Network(object):
             processed.add(addr.vk)
             futures.append(self.protocol.callFindNode(addr, self.node, False))
         if len(futures) > 0:
-            results, pending = await asyncio.wait(futures, timeout=BOOTSTRAP_TIMEOUT, return_when=asyncio.FIRST_COMPLETED)
+            log.spam('Running callFindNode() on neighbors'.format(nearest))
+            asyncio.ensure_future(asyncio.gather(futures))
 
     def track_and_inform(self):
         self.protocol.set_track_on()
@@ -161,19 +161,47 @@ class Network(object):
             node_to_find = Node(digest(vk), vk=vk)
             nearest = self.protocol.router.findNode(node_to_find)
             nd = self.get_node_from_nodes_list(vk, nearest)
-            num_hops = 1
             if nd:
                 log.debug('"{}" found in routing table resolving to {}'.format(vk, nd.ip))
                 self.cached_vks[vk] = nd.ip
                 return nd.ip
+
+            # processed = set()
+            # log.debug('Looking up VK {} with nearest: {}'.format(vk, nearest))
+            # nodes_to_ask = set(nearest)
+            # while True:
+            #     futures = []
+            #     old_len = len(nodes_to_ask)
+            #     for node in nodes_to_ask:
+            #         if node.vk not in processed:
+            #             futures.append(self._find_node(node, node_to_find))
+            #             processed.add(node.vk)
+            #     results = await asyncio.gather(*futures)
+            #     for r in results:
+            #         if r == None: continue
+            #         nd = self.get_node_from_nodes_list(vk, r)
+            #         if nd:
+            #             log.debug('"{}" resolved to {}'.format(vk, nd.ip))
+            #             self.cached_vks[vk] = nd.ip
+            #             return nd.ip
+            #         if type(r) == list:
+            #             nodes_to_ask.union(r)
+            #         else:
+            #             nodes_to_ask.add(r)
+            #     if old_len == len(nodes_to_ask):
+            #         log.debug('Cannot find vk {} in this run.'.format(vk))
+            #         return None
+
             processed = set()
             while len(nearest) > 0:
                 futures = []
+                log.critical(nearest)
                 for node in nearest:
                     if node.vk not in processed:
                         futures.append(self._find_node(node, node_to_find))
                         processed.add(node.vk)
                 results = await asyncio.gather(*futures)
+                log.critical('returned from gather')
                 for r in results:
                     if r == None: continue
                     nd = self.get_node_from_nodes_list(vk, r)
@@ -191,7 +219,7 @@ class Network(object):
     async def _find_node(self, node, node_to_find):
         try:
             fut = asyncio.ensure_future(self.protocol.callFindNode(node, node_to_find))
-            await asyncio.wait_for(fut, 12)
+            await asyncio.wait_for(fut, timeout=FIND_NODE_HOP_TIMEOUT)
             return fut.result()
         except asyncio.TimeoutError:
             log.warning("find_node timed out asking node {} for node_to_find {}".format(node, node_to_find))

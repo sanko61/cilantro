@@ -1,8 +1,12 @@
 from unittest import TestCase, main
-import zmq, zmq.asyncio, asyncio, time, traceback
+import zmq, zmq.asyncio, asyncio, time, traceback, sys, os
 from multiprocessing import Process
 
-async def _client(s, tm=3, raise_e=False, fail=False):
+async def _client(s, tm=3, raise_e=False, fail=False, async_loop=False):
+    if async_loop:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
     s.connect('tcp://localhost:4321')
     print('Client: waiting for messages...')
     msg_count = 0
@@ -13,7 +17,7 @@ async def _client(s, tm=3, raise_e=False, fail=False):
             try:
                 raise Exception('Woah')
             except Exception as e:
-                print('Errot: Got an exception {}!'.format(e))
+                print('Error: Got an exception {}!'.format(e))
         elif fail:
             1 / 0
         msg_count += 1
@@ -21,14 +25,20 @@ async def _client(s, tm=3, raise_e=False, fail=False):
             s.close()
             return
 
-async def _runner():
+async def _runner(custom_msg=None):
     while True:
-        print('I am still running')
+        if custom_msg:
+            print(custom_msg)
+        else:
+            print('I am still running')
         await asyncio.sleep(1)
 
-def client(delay=0, total_msgs=5, raise_e=False, fail=False):
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+def client(delay=0, total_msgs=5, raise_e=False, fail=False, async_loop=None):
+    if async_loop:
+        loop = async_loop
+    else:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
     ctx = zmq.asyncio.Context()
     socket = ctx.socket(zmq.SUB)
     socket.setsockopt(zmq.SUBSCRIBE, b'topic')
@@ -45,7 +55,7 @@ async def _server(s, tm, raise_e=False, fail=False):
             try:
                 raise Exception('Woah')
             except Exception as e:
-                print('Errot: Got an exception {}!'.format(e))
+                print('Error: Got an exception {}!'.format(e))
             finally:
                 print('finally')
         elif fail:
@@ -76,8 +86,36 @@ def gather_server(delay=0, total_msgs=3, raise_e=False, fail=False):
     time.sleep(delay)
     loop.run_until_complete(asyncio.gather(
         _server(socket, total_msgs, raise_e, fail),
-        _runner()
+        _runner('loop with server')
     ))
+
+def server_with_client(delay=0, total_msgs=3, raise_e=False, fail=False):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    ctx = zmq.asyncio.Context()
+    socket = ctx.socket(zmq.SUB)
+    socket.setsockopt(zmq.SUBSCRIBE, b'topic')
+    proc = LProcess(target=gather_server, args=(3,), kwargs={'fail': False})
+    proc.start()
+    print('Client <{}>: starting in {}s...'.format(id(loop), delay))
+    time.sleep(delay)
+    loop.run_until_complete(asyncio.gather(
+        _client(socket, total_msgs, fail=True)
+    ))
+
+def top_level_process():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    server_with_client()
+
+class LoggerWriter:
+    def __init__(self, level):
+        self.level = level
+    def write(self, message):
+        if message != '\n':
+            self.level(message)
+    def flush(self):
+        return
 
 class LProcess(Process):
     def run(self):
@@ -191,6 +229,10 @@ class TestLoopBehavior(TestCase):
             # return_exceptions=True
         ))
         print('Loop did not die: {}'.format(self.loop.is_running()))
+
+    def test_concurrent_loop_3_layer(self):
+        proc1 = LProcess(target=top_level_process)
+        proc1.start()
 
 if __name__ == '__main__':
     main()

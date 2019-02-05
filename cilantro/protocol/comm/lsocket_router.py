@@ -17,14 +17,15 @@ PING, PONG = b'PING', b'PONG'
 
 class LSocketRouter(LSocketBase):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, ipc=False, **kwargs):
         super().__init__(*args, **kwargs)
 
         # For all 3 of below data structures, the keys are the Router socket ID of a client
         self.recent_pongs = {}  # Tracks last times a PONG was received for each client. Val is epoch time (int)
         self.deferred_msgs = defaultdict(deque)  # Messages that are awaiting a PONG before sent
         self.ready_sockets = defaultdict(bool)
-        self.socket.probe_router = 1
+        if not ipc:
+            self.socket.probe_router = 1
 
     def send_envelope(self, env: Envelope, header: bytes=None):
         assert header is not None, "Header must be identity frame when using send on Router sockets. Cannot be None."

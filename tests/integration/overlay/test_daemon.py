@@ -44,12 +44,11 @@ class TestDaemon(BaseTestCase):
     log = get_logger(__name__)
     config_file = join(dirname(cilantro.__path__[0]), 'vmnet_configs', 'cilantro-nodes-6.json')
     environment = {'CONSTITUTION_FILE': '2-2-2.json'}
-    enable_ui = True
+    enable_ui = False
     timeout_delay = 30
 
     def callback(self, data):
         self.nodes_complete = self.nodes_complete.union(data)
-        self.log.debug('xxx: {}'.format(data))
         if self.succeeded():
             self._success_msg()
             self.end_test()
@@ -85,7 +84,6 @@ class TestDaemon(BaseTestCase):
         self.execute_python(self.ns[1], wrap_func(run_node, 'masternodes', 1))
 
         file_listener(self, self.callback, self.timeout, self.timeout_delay)
-
 
 if __name__ == '__main__':
     unittest.main()

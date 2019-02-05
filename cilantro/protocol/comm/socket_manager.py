@@ -47,14 +47,14 @@ class SocketManager:
     def set_new_node_tracking(self):
         self.overlay_client.set_new_node_tracking()
 
-    def create_socket(self, socket_type, secure=False, domain='*', *args, name='LSocket', **kwargs) -> LSocketBase:
+    def create_socket(self, socket_type, secure=False, domain='*', *args, name='LSocket', ipc=False, **kwargs) -> LSocketBase:
         assert type(socket_type) is int and socket_type > 0, "socket type must be an int greater than 0, not {}".format(socket_type)
 
         ctx = self.secure_context if secure else self.context
         zmq_socket = ctx.socket(socket_type, *args, **kwargs)
 
         if socket_type == zmq.ROUTER:
-            socket = LSocketRouter(zmq_socket, manager=self, secure=secure, domain=domain, name=name)
+            socket = LSocketRouter(zmq_socket, manager=self, secure=secure, domain=domain, name=name, ipc=ipc)
         else:
             socket = LSocketBase(zmq_socket, manager=self, secure=secure, domain=domain, name=name)
 

@@ -45,7 +45,7 @@ class TransactionBatcher(Worker):
     def _create_dealer_ipc(self, port: int, ip: str, identity: bytes):
         self.log.info("Connecting to BlockAggregator's ROUTER socket with a DEALER using ip {}, port {}, and id {}"
                       .format(ip, port, identity))
-        self.ipc_dealer = self.manager.create_socket(socket_type=zmq.DEALER, name="Batcher-IPC-Dealer[{}]".format(0), secure=False)
+        self.ipc_dealer = self.manager.create_socket(socket_type=zmq.DEALER, name="Batcher-IPC-Dealer[{}]".format(0), secure=False, ipc=True)
         self.ipc_dealer.setsockopt(zmq.IDENTITY, identity)
         self.ipc_dealer.connect(port=port, protocol='ipc', ip=ip)
 
@@ -87,7 +87,7 @@ class TransactionBatcher(Worker):
         max_num_bags = 3 * NUM_BLOCKS    # ideally, num_caches * num_blocks
 
         while True:
-            num_txns = self.queue.qsize() 
+            num_txns = self.queue.qsize()
             if (num_txns < TRANSACTIONS_PER_SUB_BLOCK) or (self.num_bags_sent >= 3 * NUM_BLOCKS):
                 await asyncio.sleep(BATCH_SLEEP_INTERVAL)
                 # time.sleep(BATCH_SLEEP_INTERVAL)
@@ -111,4 +111,3 @@ class TransactionBatcher(Worker):
                 self.log.info("Sending {} transactions in batch".format(len(tx_list)))
             else:
                 self.log.spam("Sending an empty transaction batch")
-

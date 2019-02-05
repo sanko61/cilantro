@@ -62,7 +62,7 @@ class OverlayServer(object):
 
         self.interface = OverlayInterface(sk, loop=loop, ctx=ctx)
         self.interface.tasks.append(self.command_listener())
-        # self.interface.tasks.append(self.check_loop_status()) # DEBUG ONLY
+        self.interface.tasks.append(self.check_loop_status()) # DEBUG ONLY
         if start:
             self.start()
 
@@ -190,13 +190,13 @@ class OverlayClient(object):
         try:
             asyncio.ensure_future(asyncio.gather(*self.tasks))
             self.loop.run_until_complete(self.block_until_ready())
-            self.loop.run_forever()
+            # self.loop.run_forever()
         except Exception as e:
             msg = '\nOverlayServer is not ready after {}s...\n'.format(CLIENT_SETUP_TIMEOUT)
             self.log.fatal(msg)
             raise Exception(msg)
-        finally:
-            self.log.fatal('OVERLAY CLIENT STOPPED')
+        # finally:
+        #     self.log.fatal('OVERLAY CLIENT STOPPED')
 
     async def block_until_ready(self):
         async def wait_until_ready():

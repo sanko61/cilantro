@@ -141,7 +141,7 @@ class SubBlockBuilder(Worker):
     def _create_dealer_ipc(self, port: int, ip: str, identity: bytes):
         self.log.info("Connecting to BlockManager's ROUTER socket with a DEALER using ip {}, port {}, and id {}"
                       .format(ip, port, identity))
-        self.ipc_dealer = self.manager.create_socket(socket_type=zmq.DEALER, name="SBB-IPC-Dealer[{}]".format(self.sbb_index), secure=False)
+        self.ipc_dealer = self.manager.create_socket(socket_type=zmq.DEALER, name="SBB-IPC-Dealer[{}]".format(self.sbb_index), secure=False, ipc=True)
         self.ipc_dealer.setsockopt(zmq.IDENTITY, identity)
         self.ipc_dealer.connect(port=port, protocol='ipc', ip=ip)
 

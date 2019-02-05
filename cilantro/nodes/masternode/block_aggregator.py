@@ -89,7 +89,7 @@ class BlockAggregator(Worker):
         self.tasks.append(self.router.add_handler(self.handle_router_msg))
 
         # Create ROUTER socket for communication with batcher over IPC
-        self.ipc_router = self.manager.create_socket(socket_type=zmq.ROUTER, name="BA-IPC-Router")
+        self.ipc_router = self.manager.create_socket(socket_type=zmq.ROUTER, name="BA-IPC-Router", ipc=True)
         self.ipc_router.setsockopt(zmq.ROUTER_MANDATORY, 1)  # FOR DEBUG ONLY
         self.ipc_router.bind(port=self.ipc_port, protocol='ipc', ip=self.ipc_ip)
 
@@ -225,7 +225,7 @@ class BlockAggregator(Worker):
         message = NonEmptyBlockMade.create()
         self._send_msg_over_ipc(message=message)
         new_block_notif = NewBlockNotification.create_from_block_data(block_data)
-        # sleep a bit so slower nodes don't have to constantly use catchup mgr 
+        # sleep a bit so slower nodes don't have to constantly use catchup mgr
         time.sleep(0.1)
         self.pub.send_msg(msg=new_block_notif, header=DEFAULT_FILTER.encode())
         self.log.info('Published new block notif with hash "{}" and prev hash {}'
@@ -276,5 +276,3 @@ class BlockAggregator(Worker):
         self.log.debugv("Canceling block timeout")
         if self.timeout_fut and not self.timeout_fut.done():
             self.timeout_fut.cancel()
-
-

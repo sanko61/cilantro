@@ -37,7 +37,7 @@ class PubSubAuthTester(Worker):
     def add_pub_socket(self, ip, port=PORT, protocol=PROTOCOL, secure=False, domain=DEFAULT_DOMAIN, socket_key=PUB_SOCK_KEY):
         assert socket_key not in self.pub_sockets, "Key {} already exists in pub sockets {}".format(socket_key, self.pub_sockets)
 
-        sock = self.manager.create_socket(zmq.PUB, secure=secure, domain=domain)
+        sock = self.manager.create_socket(zmq.PUB, secure=secure, domain=domain, name="Pub")
         self.log.socket("Binding pub socket with key {} using ip {}".format(socket_key, ip))
         sock.bind(port=PORT, protocol=protocol, ip=ip)
 
@@ -47,7 +47,7 @@ class PubSubAuthTester(Worker):
         assert socket_key not in self.sub_sockets, "Key {} already exists in sub sockets {}".format(socket_key, self.sub_sockets)
         assert type(filter) is bytes, "Filter must be bytes, not {}".format(filter)
 
-        sock = self.manager.create_socket(zmq.SUB, secure=secure, domain=domain)
+        sock = self.manager.create_socket(zmq.SUB, secure=secure, domain=domain, name="Sub-{}".format(len(self.sub_sockets)))
         sock.setsockopt(zmq.SUBSCRIBE, filter)
         sock.add_handler(handler_func=self.handle_sub, start_listening=True)
 

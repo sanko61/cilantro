@@ -65,7 +65,7 @@ class TestBootStrapWithDiscovery(BaseTestCase):
     log = get_logger(__name__)
     config_file = join(dirname(cilantro.__path__[0]), 'vmnet_configs', 'cilantro-nodes-6.json')
     environment = {'CONSTITUTION_FILE': '2-2-2.json'}
-    enable_ui = True
+    enable_ui = False
     timeout_delay = 30
 
     def callback(self, data):

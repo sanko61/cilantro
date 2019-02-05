@@ -117,3 +117,7 @@ class TestLSocketBase(TestCase):
         self.assertEqual(len(sock.socket.bind.call_args_list), 2)
         self.assertEqual(sock.socket.bind.call_args_list[0], sock.socket.bind.call_args_list[1])
 
+
+if __name__ == '__main__':
+    import unittest
+    unittest.main()

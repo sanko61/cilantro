@@ -134,7 +134,7 @@ class BlockManager(Worker):
         self.tasks.append(self.router.add_handler(self.handle_router_msg))
 
         # Create ROUTER socket for bidirectional communication with SBBs over IPC
-        self.ipc_router = self.manager.create_socket(socket_type=zmq.ROUTER, name="BM-IPC-Router")
+        self.ipc_router = self.manager.create_socket(socket_type=zmq.ROUTER, name="BM-IPC-Router", ipc=True)
         self.ipc_router.setsockopt(zmq.ROUTER_MANDATORY, 1)  # FOR DEBUG ONLY
         self.ipc_router.bind(port=IPC_PORT, protocol='ipc', ip=self.ipc_ip)
         self.tasks.append(self.ipc_router.add_handler(self.handle_ipc_msg))
@@ -278,7 +278,7 @@ class BlockManager(Worker):
         self.db_state.is_catchup_done = False
         if self.db_state.catchup_mgr.recv_new_blk_notif(block):
             self.set_catchup_done()
-   
+
 
     def handle_router_msg(self, frames):
         envelope = Envelope.from_bytes(frames[-1])

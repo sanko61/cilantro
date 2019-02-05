@@ -10,6 +10,7 @@ AUTH_TIMEOUT = 20 * CI_FACTOR  # Times-out after retrying auth for the interval
 RPC_TIMEOUT = 10
 FIND_NODE_HOP_TIMEOUT = 10
 FIND_NODE_TIMEOUT = FIND_NODE_HOP_TIMEOUT * 4   # we should multiply by log2(network size)
+LOOKUP_RETRY_DELAY = 5
 
 MIN_BOOTSTRAP_NODES = 1
 BOOTSTRAP_TIMEOUT = 10
@@ -17,7 +18,7 @@ DISCOVERY_TIMEOUT = 3
 if env('VMNET'):
     DISCOVERY_RETRIES = 100
 else:
-    DISCOVERY_RETRIES = 10
+    DISCOVERY_RETRIES = 100
 
 
 RETRIES_BEFORE_SOLO_BOOT = 5  # The number of discovery retries necessary before a masternode boots alone
