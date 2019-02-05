@@ -62,7 +62,7 @@ class OverlayServer(object):
 
         self.interface = OverlayInterface(sk, loop=loop, ctx=ctx)
         self.interface.tasks.append(self.command_listener())
-        self.interface.tasks.append(self.check_loop_status()) # DEBUG ONLY
+        # self.interface.tasks.append(self.check_loop_status()) # DEBUG ONLY
         if start:
             self.start()
 

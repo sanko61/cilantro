@@ -166,42 +166,17 @@ class Network(object):
                 self.cached_vks[vk] = nd.ip
                 return nd.ip
 
-            # processed = set()
-            # log.debug('Looking up VK {} with nearest: {}'.format(vk, nearest))
-            # nodes_to_ask = set(nearest)
-            # while True:
-            #     futures = []
-            #     old_len = len(nodes_to_ask)
-            #     for node in nodes_to_ask:
-            #         if node.vk not in processed:
-            #             futures.append(self._find_node(node, node_to_find))
-            #             processed.add(node.vk)
-            #     results = await asyncio.gather(*futures)
-            #     for r in results:
-            #         if r == None: continue
-            #         nd = self.get_node_from_nodes_list(vk, r)
-            #         if nd:
-            #             log.debug('"{}" resolved to {}'.format(vk, nd.ip))
-            #             self.cached_vks[vk] = nd.ip
-            #             return nd.ip
-            #         if type(r) == list:
-            #             nodes_to_ask.union(r)
-            #         else:
-            #             nodes_to_ask.add(r)
-            #     if old_len == len(nodes_to_ask):
-            #         log.debug('Cannot find vk {} in this run.'.format(vk))
-            #         return None
-
             processed = set()
-            while len(nearest) > 0:
+            log.debug('Looking up VK {} with nearest: {}'.format(vk, nearest))
+            nodes_to_ask = set(nearest)
+            while True:
                 futures = []
-                log.critical(nearest)
-                for node in nearest:
+                old_len = len(nodes_to_ask)
+                for node in nodes_to_ask:
                     if node.vk not in processed:
                         futures.append(self._find_node(node, node_to_find))
                         processed.add(node.vk)
                 results = await asyncio.gather(*futures)
-                log.critical('returned from gather')
                 for r in results:
                     if r == None: continue
                     nd = self.get_node_from_nodes_list(vk, r)
@@ -210,11 +185,12 @@ class Network(object):
                         self.cached_vks[vk] = nd.ip
                         return nd.ip
                     if type(r) == list:
-                        nearest += r
+                        nodes_to_ask.union(r)
                     else:
-                        nearest.append(r)
-
-            return None
+                        nodes_to_ask.add(r)
+                if old_len == len(nodes_to_ask):
+                    log.debug('Cannot find vk {} in this run.'.format(vk))
+                    return None
 
     async def _find_node(self, node, node_to_find):
         try:
