@@ -27,7 +27,7 @@ class Discovery:
             cls.sock = cls.ctx.socket(zmq.ROUTER)
             cls.sock.setsockopt(zmq.IDENTITY, cls.host_ip.encode())
             cls.sock.setsockopt(zmq.ROUTER_HANDOVER, 1)
-            # cls.sock.setsockopt(zmq.LINGER, 1)
+            cls.sock.setsockopt(zmq.LINGER, 1000)
             cls.is_connected = False
             if VKBook.is_node_type('masternode', Auth.vk):
                 cls.is_master_node = True

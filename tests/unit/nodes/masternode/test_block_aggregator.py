@@ -126,7 +126,6 @@ class TestBlockAggregator(TestCase):
             len([vk for vk in VKBook.get_masternodes() if TEST_VK != vk]) + \
                 len([vk for vk in VKBook.get_delegates() if TEST_VK != vk]))
 
-        log.critical("6")
         mock_pub.bind.assert_called_with(ip=TEST_IP, port=MASTER_PUB_PORT)
 
     # TODO fix this test --davis
@@ -208,7 +207,7 @@ class TestBlockAggregator(TestCase):
         ba.manager = MagicMock()
         ba.recv_new_block_notif = MagicMock()
         ba.build_task_list()
-    
+
         ba.catchup_manager.is_catchup_done = MagicMock(return_value=True)
 
         mock_env = MagicMock()

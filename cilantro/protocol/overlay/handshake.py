@@ -34,8 +34,9 @@ class Handshake:
             cls.auth.start()
 
             cls.server_sock = cls.ctx.socket(zmq.ROUTER)
-            cls.server_sock.setsockopt(zmq.ROUTER_MANDATORY, 1)  # FOR DEBUG ONLY
+            # cls.server_sock.setsockopt(zmq.ROUTER_MANDATORY, 1)  # FOR DEBUG ONLY
             cls.server_sock.setsockopt(zmq.ROUTER_HANDOVER, 1)
+            cls.server_sock.setsockopt(zmq.LINGER, 1000)
             cls.server_sock.curve_secretkey = Auth.private_key
             cls.server_sock.curve_publickey = Auth.public_key
             cls.server_sock.curve_server = True
@@ -57,6 +58,7 @@ class Handshake:
             url = 'tcp://{}:{}'.format(ip, cls.port)
             cls.log.info('Sending handshake request from {} to {} (vk={})'.format(cls.host_ip, ip, vk))
             client_sock = cls.ctx.socket(zmq.DEALER)
+            client_sock.setsockopt(zmq.LINGER, 1000)
             client_sock.setsockopt(zmq.IDENTITY, '{}:{}'.format(cls.identity, cls.count).encode())
             client_sock.curve_secretkey = Auth.private_key
             client_sock.curve_publickey = Auth.public_key

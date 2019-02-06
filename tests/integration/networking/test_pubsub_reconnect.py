@@ -117,11 +117,11 @@ class TestPubSubReconnect(MPTestCase):
 
         # Reconnect the 2 revived nodes
         self.log.test("Reconnecting last 2 nodes to all others")
-        for n in all_nodes[-2:]:
+        for n in reversed(all_nodes[-2:]):
             self.config_node(n, all_vks)
 
         # Allow time for revived nodes to finish lookups
-        time.sleep(10*CI_FACTOR)  # damn why does this take so long :( ... 10 will not work
+        time.sleep(12*CI_FACTOR)  # damn why does this take so long :( ... 10 will not work
 
         # Everyone pubs
         self.log.test("Sending PUB messages from all nodes")

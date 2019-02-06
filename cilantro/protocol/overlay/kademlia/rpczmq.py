@@ -36,7 +36,7 @@ class RPCProtocol:
         self.sock = self.ctx.socket(zmq.ROUTER)
         self.sock.setsockopt(zmq.IDENTITY, self.identity.encode())
         self.sock.setsockopt(zmq.ROUTER_HANDOVER, 1)
-        self.sock.setsockopt(zmq.LINGER, 1)
+        self.sock.setsockopt(zmq.LINGER, 1000)
         self.sock.bind('tcp://*:{}'.format(self.sourceNode.port))
         log.info("Node %i listening on %s:%i",
                  self.sourceNode.long_id, '0.0.0.0', self.sourceNode.port)
