@@ -15,7 +15,7 @@ class MalformedMessage(Exception):
     """
 
 class RPCProtocol:
-    def __init__(self, loop=None, ctx=None, waitTimeout=5):
+    def __init__(self, loop=None, ctx=None, waitTimeout=30):
         """
         @param waitTimeout: Consider it a connetion failure if no response
         within this time window.
@@ -24,6 +24,7 @@ class RPCProtocol:
         self.loop = loop or asyncio.get_event_loop()
         # asyncio.set_event_loop(self.loop)
         self.ctx = ctx or zmq.asyncio.Context()
+        self.count = 0
 
     async def listen(self):
         """
@@ -31,9 +32,11 @@ class RPCProtocol:
 
         Provide interface="::" to accept ipv6 address
         """
-        self.identity = '{}:{}:{}'.format(self.sourceNode.ip, self.sourceNode.port, self.sourceNode.vk).encode()
+        self.identity = '{}:{}:{}'.format(self.sourceNode.ip, self.sourceNode.port, self.sourceNode.vk)
         self.sock = self.ctx.socket(zmq.ROUTER)
-        self.sock.setsockopt(zmq.IDENTITY, self.identity)
+        self.sock.setsockopt(zmq.IDENTITY, self.identity.encode())
+        self.sock.setsockopt(zmq.ROUTER_HANDOVER, 1)
+        self.sock.setsockopt(zmq.LINGER, 1)
         self.sock.bind('tcp://*:{}'.format(self.sourceNode.port))
         log.info("Node %i listening on %s:%i",
                  self.sourceNode.long_id, '0.0.0.0', self.sourceNode.port)
@@ -48,9 +51,11 @@ class RPCProtocol:
     async def send_msg(self, addr, msgID, msg):
         try:
             res = None
+            url = 'tcp://{}:{}'.format(addr[0], addr[1])
             sock = self.ctx.socket(zmq.DEALER)
-            sock.setsockopt(zmq.IDENTITY, self.identity)
-            sock.connect('tcp://{}:{}'.format(addr[0], addr[1]))
+            sock.setsockopt(zmq.IDENTITY, '{}:{}'.format(self.identity, self.count).encode())
+            self.count += 1
+            sock.connect(url)
             log.spam("sending request %s for msg id %s to %s", msg, msgID, addr)
             sock.send_multipart([msg])
             response = await asyncio.wait_for(sock.recv_multipart(), timeout=self._waitTimeout)
@@ -109,7 +114,7 @@ class RPCProtocol:
         log.spam("sending response %s for msg id %s to %s",
                   response, msgID, address)
         txdata = b'\x01' + msgID + umsgpack.packb(response)
-        identity = '{}:{}:{}'.format(address[0], address[1], address[2]).encode()
+        identity = '{}:{}:{}:{}'.format(address[0], address[1], address[2], address[3]).encode()
         self.sock.send_multipart([identity, txdata])
 
     def _timeout(self, msgID):

@@ -38,7 +38,7 @@ class Network(object):
         self.ksize = ksize
         self.alpha = alpha
         self.port = DHT_PORT
-        self.cached_vks = {}
+        # self.cached_vks = {}
         self.host_ip = HOST_IP
 
         assert Auth.is_setup, 'Auth.setup() has not been called. Please do this in the OverlayInterface.'
@@ -151,44 +151,46 @@ class Network(object):
     async def _lookup_ip(self, vk):
         log.spam('Attempting to look up node with vk="{}"'.format(vk))
         if Auth.vk == vk:
-            self.cached_vks[vk] = self.host_ip
+            # self.cached_vks[vk] = self.host_ip
             return self.host_ip
-        elif vk in self.cached_vks:
-            ip = self.cached_vks.get(vk)
-            log.debug('"{}" found in cache resolving to {}'.format(vk, ip))
-            return ip
+        # elif vk in self.cached_vks:
+        #     ip = self.cached_vks.get(vk)
+        #     log.debug('"{}" found in cache resolving to {}'.format(vk, ip))
+        #     return ip
         else:
             node_to_find = Node(digest(vk), vk=vk)
             nearest = self.protocol.router.findNode(node_to_find)
             nd = self.get_node_from_nodes_list(vk, nearest)
             if nd:
                 log.debug('"{}" found in routing table resolving to {}'.format(vk, nd.ip))
-                self.cached_vks[vk] = nd.ip
+                # self.cached_vks[vk] = nd.ip
                 return nd.ip
 
             processed = set()
-            log.debug('Looking up VK {} with nearest: {}'.format(vk, nearest))
             nodes_to_ask = set(nearest)
             while True:
+                log.debug('Looking up VK {} with nodes: {}'.format(vk, nodes_to_ask - processed))
                 futures = []
-                old_len = len(nodes_to_ask)
                 for node in nodes_to_ask:
-                    if node.vk not in processed:
+                    if node not in processed:
                         futures.append(self._find_node(node, node_to_find))
-                        processed.add(node.vk)
+                        processed.add(node)
                 results = await asyncio.gather(*futures)
-                for r in results:
-                    if r == None: continue
-                    nd = self.get_node_from_nodes_list(vk, r)
-                    if nd:
-                        log.debug('"{}" resolved to {}'.format(vk, nd.ip))
-                        self.cached_vks[vk] = nd.ip
-                        return nd.ip
-                    if type(r) == list:
-                        nodes_to_ask.union(r)
-                    else:
-                        nodes_to_ask.add(r)
-                if old_len == len(nodes_to_ask):
+                log.debug('Returned with results: {}'.format(results))
+                found_ip = None
+                for node_list in results:
+                    if node_list == None: continue
+                    for nd in node_list:
+                        if nd.vk == vk:
+                            found_ip = nd.ip
+                            # self.cached_vks[nd.vk] = nd.ip
+                            log.spam('Adding "{}:{}" to cache'.format(nd.vk, nd.ip))
+                            return nd.ip
+                    nodes_to_ask.union(node_list)
+                if found_ip:
+                    log.debug('"{}" resolved to {}'.format(vk, found_ip))
+                    return found_ip
+                if len(nodes_to_ask - processed) == 0:
                     log.debug('Cannot find vk {} in this run.'.format(vk))
                     return None
 

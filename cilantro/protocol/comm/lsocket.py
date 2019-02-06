@@ -166,7 +166,10 @@ class LSocketBase:
     def _handle_not_found(self, event: dict):
         assert event['event_id'] in self.pending_lookups, "LSocket got 'not_found' event that is not in pending lookups"
         self.log.socket("Could not resolve IP for VK {}".format(event['vk']))
-        del self.pending_lookups[event['event_id']]
+        try:
+            del self.pending_lookups[event['event_id']]
+        except:
+            self.log.critical("Event {} not found".format(event['event_id']))
 
     def _reconnect(self, vk):
         if vk not in self.conn_tracker:
@@ -201,6 +204,7 @@ class LSocketBase:
         self.conn_tracker[event['vk']][2]['ip'] = event['ip']
         cmd_name, args, kwargs = self.conn_tracker[event['vk']]
         self._reconnect(event['vk'])
+        self.log.debug('Re-running cmd "{}" for event {}'.format(cmd_name, event))
         try:
             getattr(self, cmd_name)(*args, **kwargs)
         except zmq.error.ZMQError as e:

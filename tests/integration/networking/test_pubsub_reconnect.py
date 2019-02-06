@@ -121,7 +121,7 @@ class TestPubSubReconnect(MPTestCase):
             self.config_node(n, all_vks)
 
         # Allow time for revived nodes to finish lookups
-        time.sleep(16*CI_FACTOR)  # damn why does this take so long :( ... 10 will not work
+        time.sleep(10*CI_FACTOR)  # damn why does this take so long :( ... 10 will not work
 
         # Everyone pubs
         self.log.test("Sending PUB messages from all nodes")
