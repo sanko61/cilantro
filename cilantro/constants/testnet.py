@@ -25,7 +25,6 @@ MN_WITNESS_MAP = {}  # Map of masternodes --> responsible witness set
 WITNESS_MN_MAP = {}
 
 
-
 def set_testnet_nodes():
     global _MASTERNODES, _DELEGATES, _WITNESSES, TESTNET_MASTERNODES, TESTNET_WITNESSES, TESTNET_DELEGATES, \
         MN_WITNESS_MAP, WITNESS_MN_MAP, r
@@ -62,7 +61,7 @@ if os.getenv('CONSTITUTION_FILE', None) is None:
     log.notice("Constitution file not set, using default")
     set_testnet_nodes()
 else:
-    # UNHACK ALL THIS
+    # TODO -- UNHACK ALL THIS
     # global MN_WITNESS_MAP, WITNESS_MN_MAP
     from cilantro.storage.vkbook import VKBook
     print("Building WITNESS_MN_MAP manually")
