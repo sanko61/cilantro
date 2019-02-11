@@ -11,7 +11,7 @@ def run_node(node_type, idx, addr_idxs):
     from cilantro.protocol.overlay.network import Network
     from cilantro.protocol.structures.node import Node
     from cilantro.constants.ports import DHT_PORT
-    from cilantro.constants.overlay_network import MIN_BOOTSTRAP_NODES
+    from cilantro.constants.overlay_network import MIN_DISCOVERY_NODES
     from cilantro.utils.keys import Keys
     import asyncio
     from os import getenv as env
@@ -34,7 +34,7 @@ def run_node(node_type, idx, addr_idxs):
     async def check_nodes():
         while True:
             await asyncio.sleep(1)
-            if len(n.bootstrappableNeighbors()) > MIN_BOOTSTRAP_NODES:
+            if len(n.bootstrappableNeighbors()) > MIN_DISCOVERY_NODES:
                 send_to_file(env('HOST_NAME'))
 
     from cilantro.logger import get_logger
