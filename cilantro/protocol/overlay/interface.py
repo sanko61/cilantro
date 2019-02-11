@@ -46,7 +46,7 @@ class OverlayInterface:
         # asyncio.set_event_loop(self.loop)
         self.ctx = ctx or zmq.asyncio.Context()
         # reset_auth_folder should always be False and True has to be at highest level without any processes
-        Keys.setup(sk_hex=sk_hex, reset_auth_folder=False)
+        Keys.setup(sk_hex=sk_hex)
 
 
         self.network = Network(loop=self.loop)

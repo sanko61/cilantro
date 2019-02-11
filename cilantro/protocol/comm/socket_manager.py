@@ -18,7 +18,7 @@ class SocketManager:
 
         self.log = get_logger(type(self).__name__)
 
-        Keys.setup(signing_key, reset_auth_folder=False)
+        Keys.setup(signing_key)
 
         self.signing_key = Keys.sk
         self.verifying_key = Keys.vk

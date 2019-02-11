@@ -5,6 +5,7 @@ from cilantro.protocol.overlay.daemon import OverlayServer
 from cilantro.utils.lprocess import LProcess
 from cilantro.storage.vkbook import VKBook
 from cilantro.utils.keys import Keys
+from cilantro.protocol.multiprocessing.worker import Worker
 
 import asyncio
 import os
