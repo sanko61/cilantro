@@ -3,7 +3,8 @@ import heapq
 from cilantro.utils.keys import Keys
 
 class Node:
-    def __init__(self, ip, vk, port=None):
+    def __init__(self, vk=None, ip=None, port=None):
+        assert vk, 'Must provide VK'
         self.id = Keys.digest(vk)
         self.ip = ip
         self.vk = vk

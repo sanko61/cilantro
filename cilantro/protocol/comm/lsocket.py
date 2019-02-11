@@ -52,7 +52,7 @@ class LSocketBase:
         self.secure, self.socket, self.domain, self.manager = secure, socket, domain, manager
 
         if secure:
-            self.socket = SocketAuth.secure_socket(
+            self.socket = manager.socket_auth.secure_socket(
                 self.socket,
                 manager.secret,
                 manager.public_key,
@@ -209,12 +209,12 @@ class LSocketBase:
         if should_connect:
             if self.secure:
                 self.socket.curve_serverkey = Keys.vk2pk(vk)
-                SocketAuth.configure_auth(self.manager.auth, self.domain)
+                self.manager.socket_auth.configure_auth(self.domain)
             self.socket.connect(url)
         else:
             if self.secure:
                 self.socket.curve_server = True
-                SocketAuth.configure_auth(self.manager.auth, self.domain)
+                self.manager.socket_auth.configure_auth(self.domain)
             self.socket.bind(url)
 
     def __getattr__(self, item):

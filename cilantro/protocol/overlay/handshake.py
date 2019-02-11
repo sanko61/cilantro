@@ -23,130 +23,120 @@ class Handshake:
     unknown_authorized_nodes = {}
     is_setup = False
 
-    @classmethod
-    def setup(cls, loop=None, ctx=None):
-        if not cls.is_setup:
-            cls.loop = loop or asyncio.get_event_loop()
-            # asyncio.set_event_loop(cls.loop)
-            cls.ctx = ctx or zmq.asyncio.Context()
-            cls.identity = '{}:{}'.format(cls.host_ip, Keys.vk)
-            cls.auth = AsyncioAuthenticator(context=cls.ctx, loop=cls.loop)
-            cls.auth.configure_curve(domain="*", location=zmq.auth.CURVE_ALLOW_ANY)
-            cls.auth.start()
+    def __init__(self, loop=None, ctx=None):
+        if not self.is_setup:
+            self.loop = loop or asyncio.get_event_loop()
+            self.ctx = ctx or zmq.asyncio.Context()
+            self.identity = '{}:{}'.format(self.host_ip, Keys.vk)
+            self.auth = AsyncioAuthenticator(context=self.ctx, loop=self.loop)
+            self.auth.configure_curve(domain="*", location=zmq.auth.CURVE_ALLOW_ANY)
+            self.auth.start()
 
-            cls.server_sock = cls.ctx.socket(zmq.ROUTER)
-            cls.server_sock.setsockopt(zmq.ROUTER_MANDATORY, 1)  # FOR DEBUG ONLY
-            cls.server_sock.setsockopt(zmq.ROUTER_HANDOVER, 1)
-            cls.server_sock.curve_secretkey = Keys.private_key
-            cls.server_sock.curve_publickey = Keys.public_key
-            cls.server_sock.curve_server = True
-            cls.server_sock.bind(cls.url)
-            cls.is_setup = True
-            cls.count = 0
+            self.server_sock = self.ctx.socket(zmq.ROUTER)
+            self.server_sock.setsockopt(zmq.ROUTER_MANDATORY, 1)  # FOR DEBUG ONLY
+            self.server_sock.setsockopt(zmq.ROUTER_HANDOVER, 1)
+            self.server_sock.curve_secretkey = Keys.private_key
+            self.server_sock.curve_publickey = Keys.public_key
+            self.server_sock.curve_server = True
+            self.server_sock.bind(self.url)
+            self.is_setup = True
+            self.count = 0
 
-    @classmethod
-    async def initiate_handshake(cls, ip, vk, domain='*'):
-        if ip == cls.host_ip and vk == Keys.vk:
+    async def initiate_handshake(self, ip, vk, domain='*'):
+        if ip == self.host_ip and vk == Keys.vk:
         # raghu - why do we need this self authorization?
-            cls.authorized_nodes[domain][vk] = ip
-            SocketAuth.add_public_key(vk=vk, domain=domain)
+            self.authorized_nodes[domain][vk] = ip
+            Event.emit({'event': 'authorized', 'vk': vk, 'ip': ip, 'domain': domain})
             return True
-        elif cls.check_previously_authorized(ip, vk, domain):
+        elif self.check_previously_authorized(ip, vk, domain):
             return True
         else:
             start = time.time()
             authorized = False
-            url = 'tcp://{}:{}'.format(ip, cls.port)
-            cls.log.info('Sending handshake request from {} to {} (vk={})'.format(cls.host_ip, ip, vk))
-            client_sock = cls.ctx.socket(zmq.DEALER)
-            client_sock.setsockopt(zmq.IDENTITY, cls.identity)
+            url = 'tcp://{}:{}'.format(ip, self.port)
+            self.log.info('Sending handshake request from {} to {} (vk={})'.format(self.host_ip, ip, vk))
+            client_sock = self.ctx.socket(zmq.DEALER)
+            client_sock.setsockopt(zmq.IDENTITY, '{}:{}'.format(self.identity, self.count).encode())
             client_sock.curve_secretkey = Keys.private_key
             client_sock.curve_publickey = Keys.public_key
             client_sock.curve_serverkey = Keys.vk2pk(vk)
             client_sock.connect(url)
             client_sock.send_multipart([domain.encode()])
-            cls.count += 1
+            self.count += 1
 
             try:
                 domain = [chunk.decode() for chunk in await asyncio.wait_for(client_sock.recv_multipart(), AUTH_TIMEOUT)][0]
-                cls.log.info('Received a handshake reply from {} to {} (vk={})'.format(ip, cls.host_ip, vk))
-                authorized = cls.process_handshake(ip, vk, domain)
-                cls.log.notice('Complete (took {}s): {} <=o= {} (vk={})'.format(time.time()-start, cls.host_ip, ip, vk))
+                self.log.info('Received a handshake reply from {} to {} (vk={})'.format(ip, self.host_ip, vk))
+                authorized = self.process_handshake(ip, vk, domain)
+                self.log.notice('Complete (took {}s): {} <=o= {} (vk={})'.format(time.time()-start, self.host_ip, ip, vk))
             except asyncio.TimeoutError:
-                if cls.check_previously_authorized(ip, vk, domain):
+                if self.check_previously_authorized(ip, vk, domain):
                     authorized = True
-                    cls.log.notice('Complete2 (took {}s): {} <=o= {} (vk={})'.format(time.time()-start, cls.host_ip, ip, vk))
+                    self.log.notice('Complete2 (took {}s): {} <=o= {} (vk={})'.format(time.time()-start, self.host_ip, ip, vk))
                 else:
-                    cls.log.warning('Timeout (took {}s): {} <=:= {} (vk={})'.format(time.time()-start, cls.host_ip, ip, vk))
-                    cls.log.warning('Authorized nodes: {}'.format(cls.authorized_nodes[domain]))
+                    self.log.warning('Timeout (took {}s): {} <=:= {} (vk={})'.format(time.time()-start, self.host_ip, ip, vk))
+                    self.log.warning('Authorized nodes: {}'.format(self.authorized_nodes[domain]))
             except Exception:
-                cls.log.error(traceback.format_exc())
+                self.log.error(traceback.format_exc())
             finally:
                 client_sock.close()
 
             return authorized
 
-    @classmethod
-    async def listen(cls):
-        cls.log.info('Listening to other nodes on {}'.format(cls.url))
+    async def listen(self):
+        self.log.info('Listening to other nodes on {}'.format(self.url))
         while True:
             try:
-                ip_vk, domain = [chunk.decode() for chunk in await cls.server_sock.recv_multipart()]
+                ip_vk, domain = [chunk.decode() for chunk in await self.server_sock.recv_multipart()]
                 ip, vk, ct = ip_vk.split(':')
-                cls.log.info('Received a handshake request from {} to {} (vk={})'.format(ip, cls.host_ip, vk))
-                authorized = cls.process_handshake(ip, vk, domain)
+                self.log.info('Received a handshake request from {} to {} (vk={})'.format(ip, self.host_ip, vk))
+                authorized = self.process_handshake(ip, vk, domain)
                 if authorized:
-                    cls.server_sock.send_multipart([ip_vk.encode(), domain.encode()])
+                    self.server_sock.send_multipart([ip_vk.encode(), domain.encode()])
             except Exception as e:
-                cls.log.error(traceback.format_exc())
+                self.log.error(traceback.format_exc())
 
-        cls.log.fatal('Handshake DIED')
-
-    @classmethod
-    def process_handshake(cls, ip, vk, domain):
-        if cls.check_previously_authorized(ip, vk, domain):
+    def process_handshake(self, ip, vk, domain):
+        if self.check_previously_authorized(ip, vk, domain):
             return True
         else:
-            if cls.validate_roles_with_domain(domain, vk):
-                cls.authorized_nodes[domain][vk] = ip
-                cls.authorized_nodes['*'][vk] = ip
-                Keys.add_public_key(vk=vk, domain=domain)
-                cls.log.info('Authorized: {} <=O= {} (vk={}, domain={})'.format(cls.host_ip, ip, vk, domain))
+            if self.validate_roles_with_domain(domain, vk):
+                self.authorized_nodes[domain][vk] = ip
+                self.authorized_nodes['*'][vk] = ip
+                self.log.info('Authorized: {} <=O= {} (vk={}, domain={})'.format(self.host_ip, ip, vk, domain))
                 Event.emit({'event': 'authorized', 'vk': vk, 'ip': ip, 'domain': domain})
                 return True
             else:
-                cls.unknown_authorized_nodes[vk] = ip
-                Keys.remove_public_key(vk=vk, domain=domain)
+                self.unknown_authorized_nodes[vk] = ip
                 # NOTE The sender proved that it has the VK via the router's identity frame but the sender is not found in the receiver's VKBook
-                cls.log.warning('Unknown VK: {} <=X= {} (vk={}, domain={}), saving to unknown_authorized_nodes for now'.format(cls.host_ip, ip, vk, domain))
-                Event.emit({'event': 'unknown_vk', 'vk': vk, 'ip': ip, 'domain': domain})
+                self.log.warning('Unauthroized VK: {} <=X= {} (vk={}, domain={}), saving to unknown_authorized_nodes for now'.format(self.host_ip, ip, vk, domain))
+                Event.emit({'event': 'unauthorized_ip', 'vk': vk, 'ip': ip, 'domain': domain})
                 return False
 
-    @classmethod
-    def check_previously_authorized(cls, ip, vk, domain):
-        if not cls.authorized_nodes.get(domain):
-            cls.authorized_nodes[domain] = {}
-        if cls.authorized_nodes[domain].get(vk):
-            cls.log.spam('Previously Authorized: {} <=O= {} (vk={}, domain={})'.format(cls.host_ip, ip, vk, domain))
+    def check_previously_authorized(self, ip, vk, domain):
+        if not self.authorized_nodes.get(domain):
+            self.authorized_nodes[domain] = {}
+        if self.authorized_nodes[domain].get(vk):
+            self.log.spam('Previously Authorized: {} <=O= {} (vk={}, domain={})'.format(self.host_ip, ip, vk, domain))
             return True
-        elif cls.authorized_nodes['*'].get(vk):
-            if ip == cls.authorized_nodes['*'][vk]:
-                cls.log.info('Already Authorized To Domain: {} <=O= {} (vk={}, domain={})'.format(cls.host_ip, ip, vk, domain))
-                cls.authorized_nodes[domain][vk] = ip
+        elif self.authorized_nodes['*'].get(vk):
+            if ip == self.authorized_nodes['*'][vk]:
+                self.log.info('Already Authorized To Domain: {} <=O= {} (vk={}, domain={})'.format(self.host_ip, ip, vk, domain))
+                self.authorized_nodes[domain][vk] = ip
                 return True
-        elif cls.unknown_authorized_nodes.get(vk):
-            if ip == cls.unknown_authorized_nodes[vk]:
-                cls.log.info('Found and authorized previously unknown but authorized node: {} <=O= {} (vk={}, domain={})'.format(cls.host_ip, ip, vk, domain))
-                cls.authorized_nodes['*'][vk] = ip
-                cls.authorized_nodes[domain][vk] = ip
+        elif self.unknown_authorized_nodes.get(vk):
+            if ip == self.unknown_authorized_nodes[vk]:
+                self.log.info('Found and authorized previously unknown but authorized node: {} <=O= {} (vk={}, domain={})'.format(self.host_ip, ip, vk, domain))
+                self.authorized_nodes['*'][vk] = ip
+                self.authorized_nodes[domain][vk] = ip
             else:
-                cls.log.info('Removing stale unknown VK: {} =||= {} (vk={})'.format(cls.host_ip, ip, vk))
-                del cls.unknown_authorized_nodes[vk]
+                self.log.info('Removing stale unknown VK: {} =||= {} (vk={})'.format(self.host_ip, ip, vk))
+                del self.unknown_authorized_nodes[vk]
             return False
         return False
 
-    @classmethod
-    def validate_roles_with_domain(cls, domain, vk, roles='any'):
+    @staticmethod
+    def validate_roles_with_domain(domain, vk, roles='any'):
         if roles == 'any':
             return vk in VKBook.get_all()
         else:

@@ -157,7 +157,7 @@ ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo""")
         self.is_listen_ready = True
         # raghu - todo - change interface of nodes. No need to create node list and import DHT_PORT etc here
         if len(self.discovered_nodes) > 0:
-            addrs = [Node(ip=self.discovered_nodes[vk], port=DHT_PORT, vk=vk) \
+            addrs = [Node(vk=vk, ip=self.discovered_nodes[vk], port=DHT_PORT) \
                 for vk in self.discovered_nodes if vk is not self.vk]
             return addrs
         return []

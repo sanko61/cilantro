@@ -32,19 +32,9 @@ class KademliaProtocol(RPCProtocol):
     def rpc_stun(self, sender):
         return sender
 
-    def rpc_ping(self, sender, nodeid):
-        source = Node(nodeid, sender[0], sender[1], sender[2])
-        self.welcomeIfNewNode(source)
-        return self.sourceNode.id
-
-    def rpc_find_node(self, sender, nodeid, key):
-        log.debugv("finding neighbors of {} in local table for {}".format(key, sender))
-        source = Node(nodeid, sender[0], sender[1], sender[2])
-
-        # DEBUG -- TODO DELETE
-        # log.important2("Got find_node req from sender with vk {}, who is looking for {}.\nself.track_on={}\nself.router"
-        #                ".isNewNode(source)={}".format(sender[2], key, self.track_on, self.router.isNewNode(source)))
-        # END DEBUG
+    def rpc_find_node(self, sender, vk):
+        log.debugv("finding neighbors of {} in local table for {}".format(vk, sender))
+        source = Node(ip=sender[0], port=sender[1], vk=sender[2])
 
         # NOTE: we are always emitting node_online when we get a find_node request, because we don't know when clients
         # drop. A client could drop, but still be in our routing table because we don't heartbeat. Always sending
@@ -54,21 +44,14 @@ class KademliaProtocol(RPCProtocol):
         self.welcomeIfNewNode(source)
         if emit_to_client:
             Event.emit({'event': 'node_online', 'vk': source.vk, 'ip': source.ip})
-        node = Node(vk=key)
+        node = Node(vk=vk)
         neighbors = self.router.findNode(node)
         return list(map(tuple, neighbors))
 
     async def callFindNode(self, nodeToAsk, nodeToFind, updateRoutingTable = True):
         address = (nodeToAsk.ip, nodeToAsk.port, self.sourceNode.vk)
-        result = await self.find_node(address, self.sourceNode.id,
-                                      nodeToFind.vk)
+        result = await self.find_node(address, nodeToFind.vk)
         return self.handleCallResponse(result, nodeToAsk, updateRoutingTable)
-
-    async def callPing(self, nodeToAsk):
-        # address = (nodeToAsk.ip, nodeToAsk.port, self.sourceNode.vk)
-        # result = await self.ping(address, self.sourceNode.id)
-        # return self.handleCallResponse(result, nodeToAsk)
-        pass
 
     def welcomeIfNewNode(self, node):
         """

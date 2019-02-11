@@ -1,16 +1,13 @@
 from cilantro.logger import get_logger
-from cilantro.protocol.comm.socket_auth import SocketAuth
+from cilantro.protocol.comm.socket_manager import SocketManager
 from cilantro.constants.system_config import MAX_BOOT_WAIT
 from cilantro.protocol.overlay.daemon import OverlayServer
 from cilantro.utils.lprocess import LProcess
 from cilantro.storage.vkbook import VKBook
 from cilantro.utils.keys import Keys
-from cilantro.protocol.multiprocessing.worker import Worker
 
 import asyncio
-import os
 import time
-from cilantro.protocol import wallet
 
 
 class NodeTypes:
@@ -35,7 +32,7 @@ class NodeTypes:
 PING_RETRY = min(15, len(VKBook.get_all()))
 
 
-class NodeBase(Worker):
+class NodeBase:
 
     # These constants can be overwritten by subclasses
     # For dev, we require all nodes to be online. IRL this could perhaps be 2/3 node for each role  --davis
@@ -60,13 +57,9 @@ class NodeBase(Worker):
         self.overlay_proc = LProcess(target=OverlayServer, kwargs={'sk': signing_key})
         self.overlay_proc.start()  # TODO should we make this proc a daemon?
 
-        # NOTE: We do not call super() init first thing b/c we must start the OverlayServer before starting the
-        # OverlayClient, which happens in Worker's init
-        super().__init__(signing_key=signing_key, loop=loop, name=name)
-
-        self.log.notice("Node with vk {} has ip {}".format(self.verifying_key, ip))
-        self.add_overlay_handler_fn('node_offline', self._node_offline_event)
-        self.add_overlay_handler_fn('node_online', self._node_online_event)
+        self.manager = manager or SocketManager(signing_key=signing_key, context=self.context, loop=self.loop)
+        self.manager.overlay_callbacks['node_offline'].add(self._node_offline_event)
+        self.manager.overlay_callbacks['node_online'].add(self._node_online_event)
 
         self._wait_for_nodes()
 

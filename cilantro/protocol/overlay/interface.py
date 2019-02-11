@@ -48,13 +48,12 @@ class OverlayInterface:
         # reset_auth_folder should always be False and True has to be at highest level without any processes
         Keys.setup(sk_hex=sk_hex)
 
-
         self.network = Network(loop=self.loop)
         self.discovery = Discovery(Keys.vk, self.ctx)
-        Handshake.setup(loop=self.loop, ctx=self.ctx)
+        self.handshake = Handshake(loop=self.loop, ctx=self.ctx)
         self.tasks = [
             self.discovery.listen(),
-            Handshake.listen(),
+            self.handshake.listen(),
             self.network.protocol.listen(),
             self.bootup()
         ]
@@ -71,7 +70,7 @@ class OverlayInterface:
 
     @property
     def authorized_nodes(self):
-        return Handshake.authorized_nodes
+        return self.handshake.authorized_nodes
 
     async def bootup(self):
         addrs = await self.discovery.discover_nodes()
@@ -86,7 +85,7 @@ class OverlayInterface:
         Event.emit({ 'event': 'service_status', 'status': 'ready' })
 
     async def authenticate(self, ip, vk, domain='*'):
-        return await Handshake.initiate_handshake(ip, vk, domain)
+        return await self.handshake.initiate_handshake(ip, vk, domain)
 
     async def lookup_ip(self, vk):
         return await self.network.lookup_ip(vk)

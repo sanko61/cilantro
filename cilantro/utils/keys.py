@@ -1,6 +1,7 @@
 from zmq.utils.z85 import encode
 from nacl.signing import SigningKey, VerifyKey
 from nacl.bindings import crypto_sign_ed25519_sk_to_curve25519
+import hashlib
 
 class Keys:
     is_setup = False
@@ -19,7 +20,7 @@ class Keys:
         return encode(VerifyKey(bytes.fromhex(vk)).to_curve25519_public_key()._public_key)
 
     @staticmethod
-    def digest():
+    def digest(s):
         if not isinstance(s, bytes):
             s = str(s).encode('utf8')
         return hashlib.sha1(s).digest()

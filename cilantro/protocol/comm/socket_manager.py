@@ -27,7 +27,7 @@ class SocketManager:
 
         self.loop = loop or asyncio.get_event_loop()
         self.context = context or zmq.asyncio.Context()
-        self.secure_context, self.auth = SocketAuth.secure_context(async=True)
+        self.socket_auth = SocketAuth()
 
         self.sockets = []
 
@@ -51,7 +51,7 @@ class SocketManager:
     def create_socket(self, socket_type, secure=False, domain='*', *args, name='LSocket', **kwargs) -> LSocketBase:
         assert type(socket_type) is int and socket_type > 0, "socket type must be an int greater than 0, not {}".format(socket_type)
 
-        ctx = self.secure_context if secure else self.context
+        ctx = self.socket_auth.secure_context if secure else self.context
         zmq_socket = ctx.socket(socket_type, *args, **kwargs)
 
         if socket_type == zmq.ROUTER:
@@ -67,7 +67,8 @@ class SocketManager:
 
         # Execute socket manager specific functionality
         if e['event'] == 'authorized':
-            SocketAuth.configure_auth(self.auth, e['domain'])
+            self.socket_auth.add_public_key(vk=e['vk'], domain=e['domain'])
+            self.socket_auth.configure_auth(e['domain'])
 
         # Forward 'got_ip' and 'not_found' events to the LSockets who initiated them
         elif e['event'] in ('got_ip', 'not_found'):
@@ -81,6 +82,8 @@ class SocketManager:
 
         # TODO proper error handling / 'bad actor' logic here
         elif e['event'] == 'unauthorized_ip':
+            self.socket_auth.remove_public_key(vk=e['vk'], domain=e['domain'])
+            self.socket_auth.configure_auth(e['domain'])
             self.log.error("SocketManager got unauthorized_ip event {}".format(e))
 
         else:
