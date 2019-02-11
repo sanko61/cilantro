@@ -1,12 +1,8 @@
 import random
-import asyncio
-import logging
 
-from cilantro.protocol.overlay.kademlia.rpczmq import RPCProtocol
-
-from cilantro.protocol.overlay.kademlia.node import Node
-from cilantro.protocol.overlay.kademlia.routing import RoutingTable
-from cilantro.protocol.overlay.kademlia.utils import digest
+from cilantro.protocol.overlay.rpczmq import RPCProtocol
+from cilantro.protocol.structures.node import Node
+from cilantro.protocol.overlay.routing import RoutingTable
 from cilantro.protocol.overlay.event import Event
 from cilantro.logger.base import get_logger
 
@@ -58,7 +54,7 @@ class KademliaProtocol(RPCProtocol):
         self.welcomeIfNewNode(source)
         if emit_to_client:
             Event.emit({'event': 'node_online', 'vk': source.vk, 'ip': source.ip})
-        node = Node(digest(key))
+        node = Node(vk=key)
         neighbors = self.router.findNode(node)
         return list(map(tuple, neighbors))
 
@@ -108,7 +104,7 @@ class KademliaProtocol(RPCProtocol):
         log.spam("got successful response from {} and response {}".format(node, result))
         self.welcomeIfNewNode(node)
         for t in result[1]:
-            n = Node(digest(t[3]), ip=t[1], port=t[2], vk=t[3])
+            n = Node(ip=t[1], port=t[2], vk=t[3])
             if updateRoutingTable:
                 self.welcomeIfNewNode(n)
             nodes.append(n)

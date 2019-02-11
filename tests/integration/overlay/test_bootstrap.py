@@ -1,20 +1,19 @@
 from vmnet.testcase import BaseTestCase
 from vmnet.comm import file_listener
-import unittest, time, random, vmnet, cilantro, asyncio, ujson as json, os
+import unittest, time, cilantro
 from os.path import join, dirname
-from cilantro.utils.test.mp_test_case import vmnet_test, wrap_func
+from cilantro.utils.test.mp_test_case import wrap_func
 from cilantro.logger.base import get_logger
 
 def run_node(node_type, idx, addr_idxs):
     # NOTE: addr_idxs represents what each node has already discovered
     from vmnet.comm import send_to_file
-    from cilantro.protocol.overlay.kademlia.network import Network
-    from cilantro.protocol.overlay.kademlia.utils import digest
-    from cilantro.protocol.overlay.kademlia.node import Node
+    from cilantro.protocol.overlay.network import Network
+    from cilantro.protocol.structures.node import Node
     from cilantro.constants.ports import DHT_PORT
     from cilantro.constants.overlay_network import MIN_BOOTSTRAP_NODES
     from cilantro.utils.keys import Keys
-    import asyncio, os, ujson as json
+    import asyncio
     from os import getenv as env
     from cilantro.storage.vkbook import VKBook
     VKBook.setup()
@@ -26,7 +25,7 @@ def run_node(node_type, idx, addr_idxs):
         if nt in ('masternodes', 'delegates'):
             for creds in VKBook.constitution[nt]:
                 vk = creds['vk']
-                node_id = digest(vk)
+                node_id = Keys.digest(vk)
                 ip = all_ips[len(node_objs)]
                 node_objs.append(Node(node_id=node_id, vk=vk, ip=ip, port=DHT_PORT))
 
@@ -43,7 +42,7 @@ def run_node(node_type, idx, addr_idxs):
     loop = asyncio.get_event_loop()
     Keys.setup(VKBook.constitution[node_type][idx]['sk'])
     log.test('Starting {}_{}'.format(node_type, idx))
-    n = Network(node_id=digest(Auth.vk))
+    n = Network(node_id=Keys.digest(Auth.vk))
     n.tasks += [
         n.bootstrap(addrs),
         check_nodes()

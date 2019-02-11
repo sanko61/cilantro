@@ -1,13 +1,12 @@
-import zmq, zmq.asyncio, asyncio, traceback
-from os import getenv as env
+import zmq, zmq.asyncio, traceback
 from cilantro.constants.overlay_network import *
 from cilantro.constants.ports import DISCOVERY_PORT
 from cilantro.protocol.overlay.ip import *
 from cilantro.logger import get_logger
 from cilantro.storage.vkbook import VKBook
 from cilantro.constants.ports import DHT_PORT
-from cilantro.protocol.overlay.kademlia.utils import digest
-from cilantro.protocol.overlay.kademlia.node import Node
+from cilantro.utils.keys import Keys
+from cilantro.protocol.structures.node import Node
 
 
 class Discovery:
@@ -158,7 +157,7 @@ ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo""")
         self.is_listen_ready = True
         # raghu - todo - change interface of nodes. No need to create node list and import DHT_PORT etc here
         if len(self.discovered_nodes) > 0:
-            addrs = [Node(digest(vk), ip=self.discovered_nodes[vk], port=DHT_PORT, vk=vk) \
+            addrs = [Node(ip=self.discovered_nodes[vk], port=DHT_PORT, vk=vk) \
                 for vk in self.discovered_nodes if vk is not self.vk]
             return addrs
         return []

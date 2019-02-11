@@ -1,21 +1,14 @@
-from cilantro.protocol.overlay.kademlia.network import Network
-from cilantro.protocol.comm.socket_auth import SocketAuth
+from cilantro.protocol.overlay.network import Network
 from cilantro.protocol.overlay.discovery import Discovery
 from cilantro.protocol.overlay.handshake import Handshake
 from cilantro.protocol.overlay.event import Event
-from cilantro.protocol.overlay.ip import *
-from cilantro.protocol.overlay.kademlia.utils import digest
-from cilantro.protocol.overlay.ip import get_public_ip
-from cilantro.constants.overlay_network import *
 from cilantro.logger.base import get_logger
-from cilantro.storage.vkbook import VKBook
-from cilantro.protocol.overlay.kademlia.node import Node
+from cilantro.protocol.structures.node import Node
 from cilantro.utils.keys import Keys
 
-import asyncio, os, zmq.asyncio, zmq
-from os import getenv as env
+import asyncio, zmq.asyncio, zmq
 import abc
-from enum import Enum, auto
+
 
 class OverlayInterface2(abc.ABC):
     def __init__(self):
@@ -56,7 +49,7 @@ class OverlayInterface:
         Keys.setup(sk_hex=sk_hex, reset_auth_folder=False)
 
 
-        self.network = Network(loop=self.loop, node_id=digest(Keys.vk))
+        self.network = Network(loop=self.loop)
         self.discovery = Discovery(Keys.vk, self.ctx)
         Handshake.setup(loop=self.loop, ctx=self.ctx)
         self.tasks = [
@@ -73,7 +66,7 @@ class OverlayInterface:
 
     @property
     def neighbors(self):
-        return {item[2]: Node(node_id=digest(item[2]), ip=item[0], port=item[1], vk=item[2]) \
+        return {item[2]: Node(ip=item[0], port=item[1], vk=item[2]) \
             for item in self.network.bootstrappableNeighbors()}
 
     @property

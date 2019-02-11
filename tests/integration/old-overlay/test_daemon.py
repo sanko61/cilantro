@@ -1,27 +1,17 @@
 from vmnet.testcase import BaseTestCase
-from cilantro.protocol.overlay.kademlia.node import Node
 from vmnet.comm import file_listener
-import unittest, time, random, vmnet, cilantro, asyncio, ujson as json, os
+import unittest, cilantro
 from os.path import join, dirname
-from cilantro.utils.test.mp_test_case import vmnet_test, wrap_func
-from cilantro.protocol.overlay.kademlia.utils import digest
+from cilantro.utils.test.mp_test_case import wrap_func
 from cilantro.logger.base import get_logger
-from cilantro.constants.test_suites import CI_FACTOR
-from cilantro.constants.overlay_network import *
-from cilantro.storage.vkbook import VKBook
-from cilantro.constants.ports import DHT_PORT
 import time
 
-def run_node(node_type, idx, use_ips=None):
+def run_node(node_type, idx):
 
     from vmnet.comm import send_to_file
     from cilantro.utils.lprocess import LProcess
     from cilantro.protocol.overlay.daemon import OverlayServer, OverlayClient
-    from cilantro.constants.overlay_network import MIN_BOOTSTRAP_NODES
-    from cilantro.protocol.overlay.kademlia.utils import digest
-    from cilantro.constants.ports import DHT_PORT
-    from cilantro.protocol.comm.socket_auth import SocketAuth
-    import asyncio, os, ujson as json, zmq.asyncio
+    import asyncio, os, zmq.asyncio
     from cilantro.storage.vkbook import VKBook
     VKBook.setup()
 

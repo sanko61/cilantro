@@ -2,21 +2,19 @@ from cilantro.utils.test.testnet_config import set_testnet_config
 set_testnet_config('2-2-2.json')
 from vmnet.testcase import BaseTestCase
 from vmnet.comm import file_listener
-import unittest, time, random, vmnet, cilantro, asyncio, ujson as json
+import unittest, cilantro
 from os.path import join, dirname
-from cilantro.utils.test.mp_test_case import vmnet_test, wrap_func
+from cilantro.utils.test.mp_test_case import wrap_func
 from cilantro.logger.base import get_logger
 
 def nodefn(idx):
 
     import os, asyncio
-    from cilantro.protocol.overlay.kademlia.crawling import NodeSpiderCrawl
-    from cilantro.protocol.overlay.kademlia.network import Network
+    from cilantro.protocol.overlay.network import Network
     from cilantro.constants.ports import DHT_PORT
-    from cilantro.protocol.overlay.kademlia.node import Node
-    from cilantro.protocol.overlay.kademlia.utils import digest
-    from cilantro.protocol.comm.socket_auth import SocketAuth
-    from cilantro.constants.testnet import TESTNET_MASTERNODES, TESTNET_WITNESSES, TESTNET_DELEGATES
+    from cilantro.protocol.structures.node import Node
+    from cilantro.utils.keys import Keys
+    from cilantro.constants.testnet import TESTNET_MASTERNODES, TESTNET_DELEGATES
     from cilantro.logger.base import get_logger
     from vmnet.comm import send_to_file
 
@@ -24,31 +22,31 @@ def nodefn(idx):
 
     neighbors = (os.getenv('NODE').split(',') * 2)[idx+1:idx+4]
     keys = [
-    	   *[(node['sk'], node['vk']) for node in [TESTNET_MASTERNODES[0]]],
-    	   *[(node['sk'], node['vk']) for node in TESTNET_DELEGATES[:3]]
-       ]
+        *[(node['sk'], node['vk']) for node in [TESTNET_MASTERNODES[0]]],
+        *[(node['sk'], node['vk']) for node in TESTNET_DELEGATES[:3]]
+    ]
 
     async def bootstrap_nodes(ipsToAsk):
-        await network.bootstrap([Node(digest(ip), ip=ip, port=DHT_PORT, vk=keys[i][1]) for i, ip in enumerate(ipsToAsk)])
+        await network.bootstrap([Node(Keys.Keys.digest(ip), ip=ip, port=DHT_PORT, vk=keys[i][1]) for i, ip in enumerate(ipsToAsk)])
 
     async def find_neighbors(ipsToAsk, ipToFind):
         await asyncio.sleep(10)
         nodesToAsk = [
             Node(
-                digest(ip),
+                Keys.digest(ip),
                 ip=ip,
                 port=DHT_PORT
             ) for ip in ipsToAsk
         ]
         nodeToFind = Node(
-            digest(ipToFind),
+            Keys.digest(ipToFind),
             ip=ipToFind,
             port=DHT_PORT
         )
 
         ips_found = []
         for ip in ipsToAsk:
-            node_to_ask = Node(digest(ip), ip=ip, port=DHT_PORT)
+            node_to_ask = Node(Keys.digest(ip), ip=ip, port=DHT_PORT)
             res = await network.protocol.callFindNode(node_to_ask, nodeToFind)
             ips_found.append(r.ip for r in res)
             if ipToFind in ips_found:
@@ -61,8 +59,8 @@ def nodefn(idx):
     asyncio.set_event_loop(loop)
 
     Auth.setup(keys[idx][0])
-    network = Network(node_id=digest(os.getenv('HOST_IP')))
-    # network.node.id = digest(os.getenv('HOST_IP')) ### Mock only
+    network = Network(node_id=Keys.digest(os.getenv('HOST_IP')))
+    # network.node.id = Keys.digest(os.getenv('HOST_IP')) ### Mock only
 
     loop.run_until_complete(asyncio.gather(
         *network.tasks,

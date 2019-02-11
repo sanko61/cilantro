@@ -1,20 +1,15 @@
 """
 Package for interacting on the network at a high level.
 """
-import random
 import pickle
 import asyncio
-import logging
 import os
 import zmq, zmq.asyncio
 
-from cilantro.protocol.overlay.kademlia.protocol import KademliaProtocol
-from cilantro.protocol.overlay.kademlia.utils import digest
-from cilantro.protocol.overlay.kademlia.node import Node
-from cilantro.protocol.overlay.kademlia.crawling import NodeSpiderCrawl
+from cilantro.protocol.overlay.protocol import KademliaProtocol
+from cilantro.protocol.structures.node import Node
 from cilantro.constants.ports import DHT_PORT
 from cilantro.constants.overlay_network import *
-from cilantro.protocol.comm.socket_auth import SocketAuth
 from cilantro.logger.base import get_logger
 from cilantro.utils.keys import Keys
 
@@ -27,14 +22,13 @@ class Network(object):
     created to start listening as an active node on the network.
     """
 
-    def __init__(self, ksize=4, alpha=2, node_id=None, loop=None, ctx=None):
+    def __init__(self, ksize=4, alpha=2, loop=None, ctx=None):
         """
         Create a server instance.  This will start listening on the given port.
 
         Args:
             ksize (int): The k parameter from the paper
             alpha (int): The alpha parameter from the paper
-            node_id: The id for this node on the network.
         """
         self.ksize = ksize
         self.alpha = alpha
@@ -43,10 +37,8 @@ class Network(object):
         self.host_ip = HOST_IP
 
         assert Keys.is_setup, 'Keys.setup() has not been called. Please do this in the OverlayInterface.'
-        assert node_id, 'Node ID must be set!'
 
         self.node = Node(
-            node_id,
             ip=HOST_IP,
             port=self.port,
             vk=Keys.vk
@@ -54,14 +46,12 @@ class Network(object):
         self.state_fname = '{}-network-state.dat'.format(os.getenv('HOST_NAME', 'node'))
 
         self.loop = loop or asyncio.get_event_loop()
-        # asyncio.set_event_loop(self.loop)
         self.ctx = ctx or zmq.asyncio.Context()
         self.protocol = KademliaProtocol(self.node, self.ksize, self.loop, self.ctx)
 
         self.tasks = [
             self.protocol.listen(),
             self.refresh_table(),
-            # self.saveStateRegularly()
         ]
 
     def start(self):
@@ -78,9 +68,8 @@ class Network(object):
         for node_id in self.protocol.getRefreshIDs():
             node = Node(node_id)
             nearest = self.protocol.router.findNeighbors(node, self.alpha)
-            spider = NodeSpiderCrawl(self.protocol, node, nearest,
-                                     self.ksize, self.alpha)
-            ds.append(spider.find())
+            for addr in nearest:
+                ds.append(self.protocol.callFindNode(addr, self.node))
 
         # do our crawling
         await asyncio.gather(*ds)
@@ -152,7 +141,7 @@ class Network(object):
             log.debug('"{}" found in cache resolving to {}'.format(vk, ip))
             return ip
         else:
-            node_to_find = Node(digest(vk), vk=vk)
+            node_to_find = Node(vk=vk)
             nearest = self.protocol.router.findNode(node_to_find)
             nd = self.get_node_from_nodes_list(vk, nearest)
             num_hops = 1

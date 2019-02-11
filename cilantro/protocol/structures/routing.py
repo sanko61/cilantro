@@ -5,9 +5,48 @@ import asyncio
 import logging
 
 from collections import OrderedDict
-from cilantro.protocol.overlay.kademlia.utils import OrderedSet, sharedPrefix, bytesToBitString
 
 log = logging.getLogger(__name__)
+
+class OrderedSet(list):
+    """
+    Acts like a list in all ways, except in the behavior of the
+    :meth:`push` method.
+    """
+
+    def push(self, thing):
+        """
+        1. If the item exists in the list, it's removed
+        2. The item is pushed to the end of the list
+        """
+        if thing in self:
+            self.remove(thing)
+        self.append(thing)
+
+
+
+def sharedPrefix(args):
+    """
+    Find the shared prefix between the strings.
+
+    For instance:
+
+        sharedPrefix(['blahblah', 'blahwhat'])
+
+    returns 'blah'.
+    """
+    i = 0
+    while i < min(map(len, args)):
+        if len(set(map(operator.itemgetter(i), args))) != 1:
+            break
+        i += 1
+    return args[0][:i]
+
+
+def bytesToBitString(bites):
+    bits = [bin(bite)[2:].rjust(8, '0') for bite in bites]
+    return "".join(bits)
+
 
 
 class KBucket(object):

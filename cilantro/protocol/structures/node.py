@@ -1,10 +1,10 @@
 from operator import itemgetter
 import heapq
-from cilantro.protocol.management.utils.keys import digest
+from cilantro.utils.keys import Keys
 
 class Node:
     def __init__(self, ip, vk, port=None):
-        self.id = digest(vk)
+        self.id = Keys.digest(vk)
         self.ip = ip
         self.vk = vk
         self.port = port
