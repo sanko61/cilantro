@@ -51,7 +51,7 @@ class MPPubSubAuth(MPTesterBase):
         overlay_proc = LProcess(target=OverlayServer, args=(sk,))
         overlay_proc.start()
 
-        obj = PubSubAuthTester(sk, name=name, loop=loop)
+        obj = PubSubAuthTester(sk=sk, name=name, loop=loop)
 
         return obj, loop, []
 
@@ -68,7 +68,7 @@ class MPRouterAuth(MPTesterBase):
         overlay_proc = LProcess(target=OverlayServer, args=(sk,))
         overlay_proc.start()
 
-        obj = RouterAuthTester(sk, name=name, loop=loop)
+        obj = RouterAuthTester(sk=sk, name=name, loop=loop)
 
         return obj, loop, []
 

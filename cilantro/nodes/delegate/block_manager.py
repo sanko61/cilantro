@@ -88,6 +88,7 @@ class DBState:
 class BlockManager(Worker):
 
     def __init__(self, ip, *args, **kwargs):
+        super().__init__(name="BlockManager")
         self.log = get_logger("BlockManager[{}]".format(Keys.vk[:8]))
         self.tasks = []
 

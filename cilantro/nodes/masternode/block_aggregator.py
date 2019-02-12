@@ -36,6 +36,7 @@ from collections import defaultdict
 class BlockAggregator(Worker):
 
     def __init__(self, ip, ipc_ip, ipc_port, *args, **kwargs):
+        super().__init__(name="BlockAggregator")
         self.log = get_logger("BlockAggregator[{}]".format(Keys.vk[:8]))
         self.ip = ip
         self.ipc_ip = ipc_ip

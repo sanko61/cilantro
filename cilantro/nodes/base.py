@@ -57,11 +57,11 @@ class NodeBase:
         self.overlay_proc = LProcess(target=OverlayServer)
         self.overlay_proc.start()  # TODO should we make this proc a daemon?
 
-        self.manager = manager or SocketManager(context=self.context, loop=self.loop)
-        self.manager.overlay_callbacks['node_offline'].add(self._node_offline_event)
-        self.manager.overlay_callbacks['node_online'].add(self._node_online_event)
-
-        self._wait_for_nodes()
+        # self.manager = manager or SocketManager(context=self.context, loop=self.loop)
+        # self.manager.overlay_callbacks['node_offline'].add(self._node_offline_event)
+        # self.manager.overlay_callbacks['node_online'].add(self._node_online_event)
+        #
+        # self._wait_for_nodes()
 
         self.start()
 

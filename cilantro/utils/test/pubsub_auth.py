@@ -26,6 +26,7 @@ def wrap_func(fn, *args, **kwargs):
 class PubSubAuthTester(Worker):
 
     def __init__(self, *args, **kwargs):
+        super().__init__(name="PubSubAuthTester")
 
         # Dict of socket key -> LSocket instance
         self.pub_sockets = {}

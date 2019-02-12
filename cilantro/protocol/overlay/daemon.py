@@ -5,6 +5,7 @@ from cilantro.storage.vkbook import VKBook
 from cilantro.logger.base import get_logger
 from cilantro.protocol.overlay.event import Event
 from collections import deque
+from cilantro.utils.keys import Keys
 
 
 def command(fn):
@@ -45,8 +46,10 @@ def async_reply(fn):
 
 
 class OverlayServer(object):
-    def __init__(self, loop=None, ctx=None, start=True):
+    def __init__(self, sk, loop=None, ctx=None, start=True):
         self.log = get_logger('OverlayServer')
+        if sk:
+            Keys.setup(sk)
 
         self.loop = loop or asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)

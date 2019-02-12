@@ -46,7 +46,7 @@ from cilantro.protocol.structures.linked_hashtable import LinkedHashTable
 from cilantro.utils.hasher import Hasher
 from cilantro.utils.utils import int_to_bytes, bytes_to_int
 from cilantro.utils.keys import Keys
-from cilantro.protocol.comm.socket_manager import SocketManager
+from cilantro.protocol.multiprocessing.worker import Worker
 
 from enum import Enum, unique
 import asyncio, zmq.asyncio, time, os
@@ -76,13 +76,12 @@ class SubBlockManager:
         self.num_pending_sb = 0
 
 
-class SubBlockBuilder:
+class SubBlockBuilder(Worker):
 
     def __init__(self, ip: str, ipc_ip: str, ipc_port: int, sbb_index: int, *args, **kwargs):
-
+        super().__init__(name="SubBlockBuilder_{}".format(sbb_index))
         self.log = get_logger('SubBlockBuilder-{}'.format(sbb_index))
         self.tasks = []
-        self.manager = SocketManager()
 
         # These variables are used only for testing
         self.bad_actor = bool(os.getenv('BAD_ACTOR'))

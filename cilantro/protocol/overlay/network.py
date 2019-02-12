@@ -36,8 +36,6 @@ class Network(object):
         self.cached_vks = {}
         self.host_ip = HOST_IP
 
-        assert Keys.is_setup, 'Keys.setup() has not been called. Please do this in the OverlayInterface.'
-
         self.node = Node(
             ip=HOST_IP,
             port=self.port,

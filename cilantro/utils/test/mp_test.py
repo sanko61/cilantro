@@ -12,6 +12,7 @@ from cilantro.utils.lprocess import LProcess
 from cilantro.protocol import wallet
 from cilantro.logger import get_logger, overwrite_logger_level
 from vmnet.testcase import BaseNetworkTestCase
+from cilantro.utils.keys import Keys
 
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
@@ -286,6 +287,10 @@ class MPTesterBase:
 
     def __init__(self, config_fn=None, assert_fn=None,  name='TestableProcess', block_until_rdy=True,
                  always_run_as_subproc=False, *args, **kwargs):
+        if 'sk' in kwargs:
+            Keys.setup(kwargs['sk'])
+            self.sk = kwargs['sk']
+            self.vk = wallet.get_vk(kwargs['sk'])
         super().__init__()
         self.log = get_logger(name)
         self.name = name
@@ -296,9 +301,7 @@ class MPTesterBase:
         self.test_proc = None
         self.container_name = None  # Name of the docker container this object is proxying to (if run on VM)
 
-        if 'sk' in kwargs:
-            self.sk = kwargs['sk']
-            self.vk = wallet.get_vk(kwargs['sk'])
+
 
         # Create a wrapper around the build_obj with args and kwargs. We do this b/c this function will actually be
         # invoked in a separate process/machine, thus we need to capture the function call to serialize it and send

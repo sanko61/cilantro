@@ -40,6 +40,8 @@ from cilantro.utils.keys import Keys
 class BlockAggTester:
     @staticmethod
     def test(func):
+        @mock.patch("cilantro.protocol.multiprocessing.worker.asyncio", autospec=True)
+        @mock.patch("cilantro.protocol.multiprocessing.worker.SocketManager", autospec=True)
         @mock.patch("cilantro.nodes.masternode.block_aggregator.NUM_SB_PER_BLOCK", 2)
         @mock.patch("cilantro.messages.block_data.block_metadata.NUM_SB_PER_BLOCK", 2)
         @mock.patch("cilantro.nodes.masternode.block_contender.NUM_SB_PER_BLOCK", 2)

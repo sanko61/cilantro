@@ -25,6 +25,7 @@ def wrap_func(fn, *args, **kwargs):
 class RouterAuthTester(Worker):
 
     def __init__(self, *args, **kwargs):
+        super().__init__(name="RouterAuthTester")
         self.router = None
 
     def start(self):
