@@ -9,6 +9,7 @@ from cilantro.messages.transaction.data import TransactionDataBuilder
 from cilantro.constants.testnet import TESTNET_MASTERNODES, TESTNET_DELEGATES
 from cilantro.protocol.structures.merkle_tree import MerkleTree
 from unittest import TestCase
+from cilantro.utils.keys import Keys
 
 import unittest
 from unittest.mock import MagicMock
@@ -16,14 +17,15 @@ from unittest.mock import MagicMock
 import secrets
 from unittest.mock import patch
 
-
-TEST_SK = TESTNET_MASTERNODES[0]['sk']
-TEST_VK = TESTNET_MASTERNODES[0]['vk']
 DEL_SK = TESTNET_DELEGATES[0]['sk']
 DEL_VK = TESTNET_DELEGATES[0]['vk']
 
 
 class TestSubBlockContender(TestCase):
+
+    def setUp(self):
+        super().setUp()
+        Keys.setup(DEL_SK)
 
     def test_builder(self):
         sbc = SubBlockContenderBuilder.create()
@@ -35,7 +37,7 @@ class TestSubBlockContender(TestCase):
         tree = MerkleTree.from_raw_transactions(raw_txs)
 
         input_hash = 'B' * 64  # in reality this would be the env hash. we can just make something up
-        signature = build_test_merkle_sig(msg=tree.root, sk=DEL_SK, vk=DEL_VK)
+        signature = build_test_merkle_sig(msg=tree.root)
 
         sbc1 = SubBlockContender.create(result_hash=tree.root_as_hex, input_hash=input_hash, merkle_leaves=tree.leaves,
                                         signature=signature, transactions=txs, sub_block_index=0, prev_block_hash='0'*64)
@@ -51,7 +53,7 @@ class TestSubBlockContender(TestCase):
         tree = MerkleTree.from_raw_transactions(raw_txs)
 
         input_hash = 'B' * 64  # in reality this would be the env hash. we can just make something up
-        signature = build_test_merkle_sig(msg=tree.root, sk=DEL_SK, vk=DEL_VK)
+        signature = build_test_merkle_sig(msg=tree.root)
 
         sbc = SubBlockContender.create(result_hash=tree.root_as_hex, input_hash=input_hash, merkle_leaves=tree.leaves,
                                        signature=signature, transactions=txs, sub_block_index=0, prev_block_hash='0'*64)
@@ -74,7 +76,8 @@ class TestSubBlockContender(TestCase):
         tree = MerkleTree.from_raw_transactions(raw_txs)
 
         input_hash = 'B' * 64  # in reality this would be the env hash. we can just make something up
-        signature = build_test_merkle_sig(msg=tree.root, sk=DEL_SK, vk=DEL_VK)
+        Keys.setup(DEL_SK)
+        signature = build_test_merkle_sig(msg=tree.root)
 
         sbc1 = SubBlockContender.create(result_hash=tree.root_as_hex, input_hash=input_hash, merkle_leaves=tree.leaves,
                                        signature=signature, transactions=txs, sub_block_index=0, prev_block_hash='0'*64)
@@ -82,7 +85,7 @@ class TestSubBlockContender(TestCase):
         msg_type = MessageBase.registry[type(sbc1)]
         sbc2 = MessageBase.registry[msg_type].from_bytes(sbc1.serialize())
         self.assertEqual(sbc1, sbc2)
-        msg2 = Envelope.create_from_message(message=sbc2, signing_key=DEL_SK, verifying_key=DEL_VK)
+        msg2 = Envelope.create_from_message(message=sbc2)
         es = msg2.serialize()
         env = Envelope.from_bytes(es)
         sbc = env.message

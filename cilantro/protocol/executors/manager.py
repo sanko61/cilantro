@@ -8,7 +8,7 @@ from cilantro.protocol.executors.sub_pub import SubPubExecutor
 
 class ExecutorManager:
 
-    def __init__(self, loop, context, signing_key, router, name='Worker'):
+    def __init__(self, loop, context, router, name='ExecutorManager'):
         self.log = get_logger(name)
 
         self.loop = loop

@@ -1,5 +1,5 @@
 from cilantro.logger.base import get_logger
-from cilantro.protocol.multiprocessing.worker import Worker
+from cilantro.utils.keys import Keys
 from cilantro.protocol.structures.merkle_tree import MerkleTree
 
 from cilantro.storage.state import StateDriver
@@ -32,11 +32,10 @@ import asyncio, zmq, os, time, itertools
 from collections import defaultdict
 
 
-class BlockAggregator(Worker):
+class BlockAggregator:
 
     def __init__(self, ip, ipc_ip, ipc_port, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.log = get_logger("BlockAggregator[{}]".format(self.verifying_key[:8]))
+        self.log = get_logger("BlockAggregator[{}]".format(Keys.vk[:8]))
         self.ip = ip
         self.ipc_ip = ipc_ip
         self.ipc_port = ipc_port
@@ -82,7 +81,7 @@ class BlockAggregator(Worker):
             secure=True,
         )
         # self.router.setsockopt(zmq.ROUTER_MANDATORY, 1)  # FOR DEBUG ONLY
-        self.router.setsockopt(zmq.IDENTITY, self.verifying_key.encode())
+        self.router.setsockopt(zmq.IDENTITY, Keys.vk.encode())
         self.router.bind(ip=self.ip, port=MASTER_ROUTER_PORT)
 
         self.tasks.append(self.sub.add_handler(self.handle_sub_msg))
@@ -103,11 +102,11 @@ class BlockAggregator(Worker):
         # Listen to masters for new block notifs and state update requests from masters/delegates
         self.sub.setsockopt(zmq.SUBSCRIBE, CATCHUP_MN_DN_FILTER.encode())
         for vk in VKBook.get_masternodes():
-            if vk != self.verifying_key:
+            if vk != Keys.vk:
                 self.sub.connect(vk=vk, port=MASTER_PUB_PORT)
                 self.router.connect(vk=vk, port=MASTER_ROUTER_PORT)
 
-        self.catchup_manager = CatchupManager(verifying_key=self.verifying_key, pub_socket=self.pub,
+        self.catchup_manager = CatchupManager(verifying_key=Keys.vk, pub_socket=self.pub,
                                               router_socket=self.router, store_full_blocks=True)
         self.tasks.append(self._trigger_catchup())
 

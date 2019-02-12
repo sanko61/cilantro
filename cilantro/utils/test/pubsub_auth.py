@@ -1,4 +1,4 @@
-from cilantro.protocol.multiprocessing.worker import Worker
+from cilantro.utils.keys import Keys
 
 import os
 import asyncio
@@ -21,11 +21,9 @@ def wrap_func(fn, *args, **kwargs):
     return wrapper
 
 
-class PubSubAuthTester(Worker):
+class PubSubAuthTester:
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.log.important3("PubSubAuthTester starting with VK {}".format(self.verifying_key))
 
         # Dict of socket key -> LSocket instance
         self.pub_sockets = {}

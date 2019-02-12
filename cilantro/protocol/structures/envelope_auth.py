@@ -6,6 +6,7 @@ from cilantro.messages.base.base import MessageBase
 
 import math
 from cilantro.constants.protocol import MAX_UUID
+from cilantro.utils.keys import Keys
 
 """
 TODO investigate why below is setting var 'W' to the string 'ED25519wallet' instead of the actual object (as of 5/21)
@@ -33,10 +34,9 @@ class EnvelopeAuth:
         return W.verify(seal.verifying_key, meta + message, seal.signature)
 
     @staticmethod
-    def seal(signing_key: str, meta, message) -> str:
+    def seal(meta, message) -> str:
         """
         Creates a signature for constructing a seal, as a function of the MessageMeta binary and MessageBase binary
-        :param signing_key: The signing key as a hex string
         :param meta: The MessageMeta, as a MessageMeta instance or bytes (a serialized MessageMeta)
         :param message: The MessageBase, as a MessageBase instance or bytes (a serialized MessageBase)
         :return: The signed MessageMeta and MessageBase, as a 128 hex char long string
@@ -51,7 +51,7 @@ class EnvelopeAuth:
         if type(message) is not bytes:
             message = message.serialize()
 
-        return W.sign(signing_key, meta + message)
+        return W.sign(Keys.sk, meta + message)
 
     @staticmethod
     def reply_uuid(request_uuid: int):

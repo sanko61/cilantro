@@ -40,13 +40,12 @@ class OverlayInterface:
     started = False
     log = get_logger('OverlayInterface')
 
-    def __init__(self, sk_hex, loop=None, ctx=None):
+    def __init__(self, loop=None, ctx=None):
 
         self.loop = loop or asyncio.get_event_loop()
         # asyncio.set_event_loop(self.loop)
         self.ctx = ctx or zmq.asyncio.Context()
         # reset_auth_folder should always be False and True has to be at highest level without any processes
-        Keys.setup(sk_hex=sk_hex)
 
         self.network = Network(loop=self.loop)
         self.discovery = Discovery(Keys.vk, self.ctx)

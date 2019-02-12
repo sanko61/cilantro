@@ -13,10 +13,10 @@ from cilantro.protocol.structures.envelope_auth import EnvelopeAuth
 from cilantro.protocol import wallet
 
 from cilantro.constants.testnet import *
+from cilantro.utils.keys import Keys
 
 class TestEnvelopefromObjects(TestCase):
     """Envelope unit tests using Envelope.create_from_objects() directly to create envelopes"""
-
 
     def _default_meta(self):
         """
@@ -54,7 +54,8 @@ class TestEnvelopefromObjects(TestCase):
         sk, vk = wallet.new()
         message = self._default_msg()
 
-        env = Envelope.create_from_message(message=message, signing_key=sk, verifying_key=vk)
+        Keys.setup(sk)
+        env = Envelope.create_from_message(message=message)
         env_binary = env.serialize()
 
         clone = Envelope.from_bytes(env_binary)
@@ -121,7 +122,8 @@ class TestEnvelopefromObjects(TestCase):
         sk, vk = wallet.new()
         sk_prime = 'A' * 64
 
-        signature = EnvelopeAuth.seal(signing_key=sk_prime, meta=meta, message=message)
+        Keys.setup(sk_prime)
+        signature = EnvelopeAuth.seal(meta=meta, message=message)
         seal = Seal.create(signature=signature, verifying_key=vk)
 
         env = Envelope._create_from_objects(seal=seal, meta=meta, message=message.serialize())
@@ -135,8 +137,9 @@ class TestEnvelopefromObjects(TestCase):
         meta = self._default_meta()
         message = self._default_msg()
         sk, vk = wallet.new()
+        Keys.setup(sk)
 
-        signature = EnvelopeAuth.seal(signing_key=sk, meta=meta, message=message)
+        signature = EnvelopeAuth.seal(meta=meta, message=message)
         seal = Seal.create(signature=signature, verifying_key=vk)
 
         env = Envelope._create_from_objects(seal=seal, meta=meta, message=message.serialize())
@@ -148,8 +151,9 @@ class TestEnvelopefromObjects(TestCase):
         message = self._default_msg()
         sk, vk = wallet.new()
         sk2, vk2 = wallet.new()
+        Keys.setup(sk)
 
-        signature = EnvelopeAuth.seal(signing_key=sk, meta=meta, message=message)
+        signature = EnvelopeAuth.seal(meta=meta, message=message)
 
         seal = Seal.create(signature=signature, verifying_key=vk2)
 
@@ -162,8 +166,9 @@ class TestEnvelopefromObjects(TestCase):
         message = self._default_msg()
         sk, vk = wallet.new()
         sk2, vk2 = wallet.new()
+        Keys.setup(sk)
 
-        signature = EnvelopeAuth.seal(signing_key=sk, meta=meta, message=message)
+        signature = EnvelopeAuth.seal(meta=meta, message=message)
 
         seal = Seal.create(signature=signature, verifying_key=vk2)
 
@@ -180,8 +185,9 @@ class TestEnvelopefromObjects(TestCase):
         meta = self._default_meta()
         message = self._default_msg()
         sk, vk = TESTNET_MASTERNODES[0]['sk'], TESTNET_MASTERNODES[0]['vk']
+        Keys.setup(sk)
 
-        signature = EnvelopeAuth.seal(signing_key=sk, meta=meta, message=message)
+        signature = EnvelopeAuth.seal(meta=meta, message=message)
         seal = Seal.create(signature=signature, verifying_key=vk)
         env = Envelope._create_from_objects(seal=seal, meta=meta, message=message.serialize())
 
@@ -191,8 +197,9 @@ class TestEnvelopefromObjects(TestCase):
         meta = self._default_meta()
         message = self._default_msg()
         sk, vk = TESTNET_WITNESSES[0]['sk'], TESTNET_WITNESSES[0]['vk']
+        Keys.setup(sk)
 
-        signature = EnvelopeAuth.seal(signing_key=sk, meta=meta, message=message)
+        signature = EnvelopeAuth.seal(meta=meta, message=message)
         seal = Seal.create(signature=signature, verifying_key=vk)
         env = Envelope._create_from_objects(seal=seal, meta=meta, message=message.serialize())
 
@@ -202,8 +209,9 @@ class TestEnvelopefromObjects(TestCase):
         meta = self._default_meta()
         message = self._default_msg()
         sk, vk = TESTNET_DELEGATES[0]['sk'], TESTNET_DELEGATES[0]['vk']
+        Keys.setup(sk)
 
-        signature = EnvelopeAuth.seal(signing_key=sk, meta=meta, message=message)
+        signature = EnvelopeAuth.seal(meta=meta, message=message)
         seal = Seal.create(signature=signature, verifying_key=vk)
         env = Envelope._create_from_objects(seal=seal, meta=meta, message=message.serialize())
 
@@ -247,7 +255,8 @@ class TestEnvelopeFromMessage(TestCase):
         sk, vk = wallet.new()
         msg = self._default_msg()
 
-        env = Envelope.create_from_message(message=msg, signing_key=sk)
+        Keys.setup(sk)
+        env = Envelope.create_from_message(message=msg)
 
         self.assertTrue(env.verify_seal())
         self.assertEqual(env.message, msg)
@@ -258,9 +267,10 @@ class TestEnvelopeFromMessage(TestCase):
         Tests create_from_message with invalid message
         """
         sk, vk = wallet.new()
+        Keys.setup(sk)
         msg = 'hi im a bad message'
 
-        self.assertRaises(Exception, Envelope.create_from_message, msg, sk, vk)
+        self.assertRaises(Exception, Envelope.create_from_message, msg)
 
     def test_create_from_message_bad_sk(self):
         """
@@ -279,8 +289,9 @@ class TestEnvelopeFromMessage(TestCase):
         sk1, vk1 = wallet.new()
         msg = self._default_msg()
         sender = 'dat boi'
+        Keys.setup(sk)
 
-        env = Envelope.create_from_message(message=msg, signing_key=sk, verifying_key=vk)  # no error
+        env = Envelope.create_from_message(message=msg)  # no error
 
         self.assertEqual(env.seal.verifying_key, vk)
 
@@ -294,8 +305,9 @@ class TestEnvelopeFromMessage(TestCase):
         """
         sk, vk = wallet.new()
         message = self._default_msg()
+        Keys.setup(sk)
 
-        env = Envelope.create_from_message(message=message, signing_key=sk, verifying_key=vk)
+        env = Envelope.create_from_message(message=message)
 
         self.assertEqual(env, Envelope.from_bytes(env.serialize()))
 
@@ -306,10 +318,11 @@ class TestEnvelopeFromMessage(TestCase):
         meta = self._default_meta()
         message = self._default_msg()
         sk, vk = wallet.new()
+        Keys.setup(sk)
 
-        signature = EnvelopeAuth.seal(signing_key=sk, meta=meta, message=message)
+        signature = EnvelopeAuth.seal( meta=meta, message=message)
         seal = Seal.create(signature=signature, verifying_key=vk)
 
-        env = Envelope.create_from_message(message=message, signing_key=sk, verifying_key=vk)
+        env = Envelope.create_from_message(message=message)
 
         self.assertTrue(env.verify_seal())

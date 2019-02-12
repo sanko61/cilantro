@@ -20,7 +20,6 @@ from cilantro.nodes.delegate.sub_block_builder import SubBlockBuilder
 from cilantro.storage.redis import SafeRedis
 from cilantro.storage.vkbook import VKBook
 from cilantro.storage.state import StateDriver
-from cilantro.protocol.multiprocessing.worker import Worker
 
 from cilantro.utils.lprocess import LProcess
 from cilantro.utils.hasher import Hasher
@@ -40,6 +39,7 @@ from cilantro.messages.consensus.align_input_hash import AlignInputHash
 from cilantro.messages.signals.delegate import MakeNextBlock, DiscardPrevBlock
 from cilantro.messages.signals.node import Ready
 from cilantro.messages.block_data.state_update import *
+from cilantro.utils.keys import Keys
 
 import asyncio, zmq, os, time, random
 from collections import defaultdict
@@ -84,11 +84,10 @@ class DBState:
         self.input_hash_map.clear()
 
 
-class BlockManager(Worker):
+class BlockManager:
 
     def __init__(self, ip, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.log = get_logger("BlockManager[{}]".format(self.verifying_key[:8]))
+        self.log = get_logger("BlockManager[{}]".format(Keys.vk[:8]))
         self.tasks = []
 
         self.ip = ip
@@ -102,7 +101,7 @@ class BlockManager(Worker):
                         "num_sub_blocks={num_sb}\nnum_blocks={num_blocks}\nsub_blocks_per_block={sb_per_block}\n"
                         "num_sb_builders={num_sb_builders}\nsub_blocks_per_builder={sb_per_builder}\n"
                         "sub_blocks_per_block_per_builder={sb_per_block_per_builder}\n"
-                        .format(vk=self.verifying_key, sb_index=self.sb_index, num_sb=NUM_SUB_BLOCKS,
+                        .format(vk=Keys.vk, sb_index=self.sb_index, num_sb=NUM_SUB_BLOCKS,
                                 num_blocks=NUM_BLOCKS, sb_per_block=NUM_SB_PER_BLOCK,
                                 num_sb_builders=NUM_SB_BUILDERS, sb_per_builder=NUM_SB_PER_BUILDER,
                                 sb_per_block_per_builder=NUM_SB_PER_BLOCK_PER_BUILDER))
@@ -125,11 +124,11 @@ class BlockManager(Worker):
         # self.router = self.manager.create_socket(socket_type=zmq.ROUTER, name="BM-Router", secure=True)
         self.router = self.manager.create_socket(
             socket_type=zmq.ROUTER,
-            name="BM-Router-{}".format(self.verifying_key[-4:]),
+            name="BM-Router-{}".format(Keys.vk[-4:]),
             secure=True,
         )
         # self.router.setsockopt(zmq.ROUTER_MANDATORY, 1)  # FOR DEBUG ONLY
-        self.router.setsockopt(zmq.IDENTITY, self.verifying_key.encode())
+        self.router.setsockopt(zmq.IDENTITY, Keys.vk.encode())
         self.router.bind(port=DELEGATE_ROUTER_PORT, protocol='tcp', ip=self.ip)
         self.tasks.append(self.router.add_handler(self.handle_router_msg))
 
@@ -144,19 +143,19 @@ class BlockManager(Worker):
         #          do we have a corresponding sub at master that handles this properly ?
         self.pub = self.manager.create_socket(
             socket_type=zmq.PUB,
-            name="BM-Pub-{}".format(self.verifying_key[-4:]),
+            name="BM-Pub-{}".format(Keys.vk[-4:]),
             secure=True,
         )
         self.pub.bind(port=DELEGATE_PUB_PORT, protocol='tcp', ip=self.ip)
 
-        self.db_state.catchup_mgr = CatchupManager(self.signing_key, self.pub, self.router, False)
+        self.db_state.catchup_mgr = CatchupManager(Keys.sk, self.pub, self.router, False)
 
         # Create SUB socket to
         # 1) listen for subblock contenders from other delegates
         # 2) listen for NewBlockNotifications from masternodes
         self.sub = self.manager.create_socket(
             socket_type=zmq.SUB,
-            name="BM-Sub-{}".format(self.verifying_key[-4:]),
+            name="BM-Sub-{}".format(Keys.vk[-4:]),
             secure=True,
         )
         self.tasks.append(self.sub.add_handler(self.handle_sub_msg))
@@ -186,8 +185,7 @@ class BlockManager(Worker):
         for i in range(NUM_SB_BUILDERS):
             self.sb_builders[i] = LProcess(target=SubBlockBuilder, name="SBB_Proc-{}".format(i),
                                            kwargs={"ipc_ip": self.ipc_ip, "ipc_port": IPC_PORT,
-                                                   "signing_key": self.signing_key, "ip": self.ip,
-                                                   "sbb_index": i})
+                                                   "ip": self.ip, "sbb_index": i, "manager": self.manager})
             self.log.info("Starting SBB #{}".format(i))
             self.sb_builders[i].start()
 
@@ -197,10 +195,10 @@ class BlockManager(Worker):
 
     def _get_my_index(self):
         for index, vk in enumerate(VKBook.get_delegates()):
-            if vk == self.verifying_key:
+            if vk == Keys.vk:
                 return index
 
-        raise Exception("Delegate VK {} not found in VKBook {}".format(self.verifying_key, VKBook.get_delegates()))
+        raise Exception("Delegate VK {} not found in VKBook {}".format(Keys.vk, VKBook.get_delegates()))
 
     def handle_ipc_msg(self, frames):
         self.log.spam("Got msg over ROUTER IPC from a SBB with frames: {}".format(frames))  # TODO delete this

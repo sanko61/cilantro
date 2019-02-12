@@ -13,17 +13,9 @@ import asyncio, zmq.asyncio
 
 class SocketManager:
 
-    def __init__(self, signing_key: str, context=None, loop=None):
-        assert is_valid_hex(signing_key, 64), "signing_key must a 64 char hex str not {}".format(signing_key)
+    def __init__(self, context=None, loop=None):
 
         self.log = get_logger(type(self).__name__)
-
-        Keys.setup(signing_key)
-
-        self.signing_key = Keys.sk
-        self.verifying_key = Keys.vk
-        self.public_key = Keys.public_key
-        self.secret = Keys.private_key
 
         self.loop = loop or asyncio.get_event_loop()
         self.context = context or zmq.asyncio.Context()

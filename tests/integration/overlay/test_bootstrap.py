@@ -25,9 +25,8 @@ def run_node(node_type, idx, addr_idxs):
         if nt in ('masternodes', 'delegates'):
             for creds in VKBook.constitution[nt]:
                 vk = creds['vk']
-                node_id = Keys.digest(vk)
                 ip = all_ips[len(node_objs)]
-                node_objs.append(Node(node_id=node_id, vk=vk, ip=ip, port=DHT_PORT))
+                node_objs.append(Node(vk=vk, ip=ip, port=DHT_PORT))
 
     addrs = [node_objs[i] for i in addr_idxs]
 
@@ -42,7 +41,7 @@ def run_node(node_type, idx, addr_idxs):
     loop = asyncio.get_event_loop()
     Keys.setup(VKBook.constitution[node_type][idx]['sk'])
     log.test('Starting {}_{}'.format(node_type, idx))
-    n = Network(node_id=Keys.digest(Auth.vk))
+    n = Network()
     n.tasks += [
         n.bootstrap(addrs),
         check_nodes()

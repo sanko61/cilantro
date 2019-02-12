@@ -11,7 +11,7 @@ import envelope_capnp
 
 from cilantro.protocol import wallet
 from cilantro.utils import Hasher  # Just for debugging (used in __repr__)
-
+from cilantro.utils.keys import Keys
 
 
 class Envelope(MessageBase):
@@ -47,7 +47,7 @@ class Envelope(MessageBase):
         return env
 
     @classmethod
-    def create_from_message(cls, message: MessageBase, signing_key: str, verifying_key: str=None, uuid: int=-1):
+    def create_from_message(cls, message: MessageBase, uuid: int=-1):
         """
         Creates an Envelope to package a MessageBase instance
 
@@ -69,10 +69,8 @@ class Envelope(MessageBase):
         meta = MessageMeta.create(type=t, timestamp=timestamp, uuid=uuid)
 
         # Create Seal
-        if not verifying_key:
-            verifying_key = wallet.get_vk(signing_key)
-        seal_sig = EnvelopeAuth.seal(signing_key=signing_key, meta=meta, message=message)
-        seal = Seal.create(signature=seal_sig, verifying_key=verifying_key)
+        seal_sig = EnvelopeAuth.seal(meta=meta, message=message)
+        seal = Seal.create(signature=seal_sig, verifying_key=Keys.vk)
 
         # Create Envelope
         obj = cls._create_from_objects(seal=seal, meta=meta, message=message.serialize())

@@ -45,7 +45,7 @@ def async_reply(fn):
 
 
 class OverlayServer(object):
-    def __init__(self, sk, loop=None, ctx=None, start=True):
+    def __init__(self, loop=None, ctx=None, start=True):
         self.log = get_logger('OverlayServer')
 
         self.loop = loop or asyncio.new_event_loop()
@@ -59,7 +59,7 @@ class OverlayServer(object):
 
         Event.set_evt_sock(self.evt_sock)
 
-        self.interface = OverlayInterface(sk, loop=loop, ctx=ctx)
+        self.interface = OverlayInterface(loop=loop, ctx=ctx)
         self.interface.tasks.append(self.command_listener())
 
         if start:
@@ -155,7 +155,7 @@ class OverlayClient(object):
         self.ctx = ctx or zmq.asyncio.Context()
         self.cmd_sock = self.ctx.socket(socket_type=zmq.DEALER)
         self.cmd_sock.setsockopt(zmq.IDENTITY, str(os.getpid()).encode())
-        self.cmd_sock.connect(CMD_URL)
+        self`.cmd_sock.connect(CMD_URL)
         self.evt_sock = self.ctx.socket(socket_type=zmq.SUB)
         self.evt_sock.setsockopt(zmq.SUBSCRIBE, b"")
         self.evt_sock.connect(EVENT_URL)

@@ -2,7 +2,7 @@ from cilantro.messages.base.base import MessageBase
 from cilantro.messages.utils import validate_hex
 import json, time
 from cilantro.protocol import wallet
-
+from cilantro.utils.keys import Keys
 
 class MerkleSignature(MessageBase):
     """
@@ -45,10 +45,9 @@ class MerkleSignature(MessageBase):
         return cls.from_data(data, validate=validate)
 
     @classmethod
-    def create_from_payload(cls, signing_key: str, payload: bytes, verifying_key: str=None, timestamp: str=None):
-        sig_hex = wallet.sign(signing_key, payload)
-        verifying_key = verifying_key or wallet.get_vk(signing_key)
-        return cls.create(sig_hex=sig_hex, sender=verifying_key)
+    def create_from_payload(cls, payload: bytes, verifying_key: str=None, timestamp: str=None):
+        sig_hex = wallet.sign(Keys.sk, payload)
+        return cls.create(sig_hex=sig_hex, sender=Keys.vk)
 
     @classmethod
     def _deserialize_data(cls, data: bytes):
@@ -83,9 +82,6 @@ def build_test_merkle_sig(msg: bytes=b'some default payload', sk=None, vk=None) 
     """
     import time
 
-    if not sk:
-        sk, vk = wallet.new()
+    signature = wallet.sign(Keys.sk, msg)
 
-    signature = wallet.sign(sk, msg)
-
-    return MerkleSignature.create(sig_hex=signature, timestamp=str(time.time()), sender=vk)
+    return MerkleSignature.create(sig_hex=signature, timestamp=str(time.time()), sender=Keys.vk)

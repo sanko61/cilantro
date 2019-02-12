@@ -256,8 +256,7 @@ class LSocketBase:
         assert type(msg) is not Envelope, "Attempted to package a 'message' that is already an envelope"
         assert issubclass(type(msg), MessageBase), "Attempted to package a message that is not a MessageBase subclass"
 
-        return Envelope.create_from_message(message=msg, signing_key=self.manager.signing_key,
-                                            verifying_key=self.manager.verifying_key)
+        return Envelope.create_from_message(message=msg)
 
     def _package_reply(self, reply: MessageBase, req_env: Envelope) -> Envelope:
         """ Convenience method to create a reply envelope. The difference between this func and _package_msg, is that
@@ -269,8 +268,7 @@ class LSocketBase:
         request_uuid = req_env.meta.uuid
         reply_uuid = EnvelopeAuth.reply_uuid(request_uuid)
 
-        return Envelope.create_from_message(message=reply, signing_key=self.manager.signing_key,
-                                            verifying_key=self.manager.verifying_key, uuid=reply_uuid)
+        return Envelope.create_from_message(message=reply, uuid=reply_uuid)
 
     def _flush_pending_commands(self):
         self.log.debug("Flushing {} pending commands from queue".format(len(self.pending_commands)))

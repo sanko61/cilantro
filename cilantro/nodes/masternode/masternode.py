@@ -35,7 +35,7 @@ class Masternode(NodeBase):
         # Create a worker to do transaction batching
         self.log.info("Masternode starting transaction batcher process")
         self.batcher = LProcess(target=TransactionBatcher, name='TxBatcherProc',
-                                kwargs={'queue': self.tx_queue, 'signing_key': self.signing_key,
+                                kwargs={'queue': self.tx_queue,
                                         'ip': self.ip, 'ipc_ip': self.ipc_ip, 'ipc_port': IPC_PORT})
         self.batcher.start()
 

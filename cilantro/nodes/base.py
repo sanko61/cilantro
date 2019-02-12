@@ -54,10 +54,10 @@ class NodeBase:
         self.online_mns, self.online_dels, self.online_wits = set(), set(), set()
 
         self.log.info("Starting overlay service")
-        self.overlay_proc = LProcess(target=OverlayServer, kwargs={'sk': signing_key})
+        self.overlay_proc = LProcess(target=OverlayServer)
         self.overlay_proc.start()  # TODO should we make this proc a daemon?
 
-        self.manager = manager or SocketManager(signing_key=signing_key, context=self.context, loop=self.loop)
+        self.manager = manager or SocketManager(context=self.context, loop=self.loop)
         self.manager.overlay_callbacks['node_offline'].add(self._node_offline_event)
         self.manager.overlay_callbacks['node_online'].add(self._node_online_event)
 

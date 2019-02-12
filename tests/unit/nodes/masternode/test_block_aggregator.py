@@ -34,6 +34,7 @@ from cilantro.storage.redis import SafeRedis
 # time and logger are for debugging
 import time
 from cilantro.logger.base import get_logger
+from cilantro.utils.keys import Keys
 
 
 class BlockAggTester:
@@ -42,8 +43,6 @@ class BlockAggTester:
         @mock.patch("cilantro.nodes.masternode.block_aggregator.NUM_SB_PER_BLOCK", 2)
         @mock.patch("cilantro.messages.block_data.block_metadata.NUM_SB_PER_BLOCK", 2)
         @mock.patch("cilantro.nodes.masternode.block_contender.NUM_SB_PER_BLOCK", 2)
-        @mock.patch("cilantro.protocol.multiprocessing.worker.asyncio", autospec=True)
-        @mock.patch("cilantro.protocol.multiprocessing.worker.SocketManager", autospec=True)
         @mock.patch("cilantro.nodes.masternode.block_aggregator.BlockAggregator.run", autospec=True)
         def _func(*args, **kwargs):
             return func(*args, **kwargs)
@@ -94,7 +93,7 @@ class TestBlockAggregator(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        MDB(s_key = TEST_SK)
+        MDB(s_key=TEST_SK)
 
     def setUp(self):
         MDB.init_mdb = True
@@ -103,7 +102,8 @@ class TestBlockAggregator(TestCase):
 
     @BlockAggTester.test
     def test_build_task_list_connect_and_bind(self, *args):
-        ba = BlockAggregator(ip=TEST_IP, signing_key=TEST_SK, ipc_ip="test_mn-ipc-sock", ipc_port=6967)
+        Keys.setup(TEST_SK)
+        ba = BlockAggregator(ip=TEST_IP, ipc_ip="test_mn-ipc-sock", ipc_port=6967)
 
         mock_manager = MagicMock()
         ba.manager = mock_manager
@@ -126,13 +126,13 @@ class TestBlockAggregator(TestCase):
             len([vk for vk in VKBook.get_masternodes() if TEST_VK != vk]) + \
                 len([vk for vk in VKBook.get_delegates() if TEST_VK != vk]))
 
-        log.critical("6")
         mock_pub.bind.assert_called_with(ip=TEST_IP, port=MASTER_PUB_PORT)
 
     # TODO fix this test --davis
     # @BlockAggTester.test
     # def test_store_block(self, *args):
-    #     ba = BlockAggregator(ip=TEST_IP, signing_key=TEST_SK, ipc_ip="test_mn-ipc-sock", ipc_port=6967)
+    #     Keys.setup(TEST_SK)
+    #     ba = BlockAggregator(ip=TEST_IP, ipc_ip="test_mn-ipc-sock", ipc_port=6967)
     #     ba.manager = MagicMock()
     #     ba.send_new_block_notif = MagicMock()
     #     ba.build_task_list()
@@ -186,7 +186,8 @@ class TestBlockAggregator(TestCase):
 
     @BlockAggTester.test
     def test_handle_sub_msg_with_sub_block_contender(self, *args):
-        ba = BlockAggregator(ip=TEST_IP, signing_key=TEST_SK, ipc_ip="test_mn-ipc-sock", ipc_port=6967)
+        Keys.setup(TEST_SK)
+        ba = BlockAggregator(ip=TEST_IP, ipc_ip="test_mn-ipc-sock", ipc_port=6967)
 
         ba.manager = MagicMock()
         ba.recv_sub_block_contender = MagicMock()
@@ -203,12 +204,13 @@ class TestBlockAggregator(TestCase):
 
     @BlockAggTester.test
     def test_handle_sub_msg_with_new_block_notif(self, *args):
-        ba = BlockAggregator(ip=TEST_IP, signing_key=TEST_SK, ipc_ip="test_mn-ipc-sock", ipc_port=6967)
+        Keys.setup(TEST_SK)
+        ba = BlockAggregator(ip=TEST_IP, ipc_ip="test_mn-ipc-sock", ipc_port=6967)
 
         ba.manager = MagicMock()
         ba.recv_new_block_notif = MagicMock()
         ba.build_task_list()
-    
+
         ba.catchup_manager.is_catchup_done = MagicMock(return_value=True)
 
         mock_env = MagicMock()
@@ -221,13 +223,15 @@ class TestBlockAggregator(TestCase):
 
     @BlockAggTester.test
     def test_recv_sub_block_contender(self, *args):
-        ba = BlockAggregator(ip=TEST_IP, signing_key=TEST_SK, ipc_ip="test_mn-ipc-sock", ipc_port=6967)
+        Keys.setup(TEST_SK)
+        ba = BlockAggregator(ip=TEST_IP, ipc_ip="test_mn-ipc-sock", ipc_port=6967)
 
         ba.manager = MagicMock()
         ba.build_task_list()
         ba.catchup_manager.is_catchup_done = MagicMock(return_value=True)
 
-        signature = build_test_merkle_sig(msg=bytes.fromhex(RESULT_HASH1), sk=DEL_SK, vk=DEL_VK)
+        Keys.setup(DEL_SK)
+        signature = build_test_merkle_sig(msg=bytes.fromhex(RESULT_HASH1))
         sbc = SubBlockContender.create(RESULT_HASH1, INPUT_HASH1, MERKLE_LEAVES1, signature, TXS1, 0, GENESIS_BLOCK_HASH)
 
         ba.recv_sub_block_contender(DEL_VK, sbc)
@@ -236,13 +240,15 @@ class TestBlockAggregator(TestCase):
 
     @BlockAggTester.test
     def test_recv_empty_sub_block_contender(self, *args):
-        ba = BlockAggregator(ip=TEST_IP, signing_key=TEST_SK, ipc_ip="test_mn-ipc-sock", ipc_port=6967)
+        Keys.setup(TEST_SK)
+        ba = BlockAggregator(ip=TEST_IP, ipc_ip="test_mn-ipc-sock", ipc_port=6967)
 
         ba.manager = MagicMock()
         ba.build_task_list()
         ba.catchup_manager.is_catchup_done = MagicMock(return_value=True)
 
-        signature = build_test_merkle_sig(msg=bytes.fromhex(INPUT_HASH1), sk=DEL_SK, vk=DEL_VK)
+        Keys.setup(DEL_SK)
+        signature = build_test_merkle_sig(msg=bytes.fromhex(INPUT_HASH1))
         sbc = SubBlockContender.create_empty_sublock(INPUT_HASH1, sub_block_index=0, signature=signature,
                                                      prev_block_hash=GENESIS_BLOCK_HASH)
 
@@ -251,7 +257,8 @@ class TestBlockAggregator(TestCase):
     @mock.patch("cilantro.messages.block_data.block_metadata.NUM_SB_PER_BLOCK", 1)
     @mock.patch("cilantro.nodes.masternode.block_contender.NUM_SB_PER_BLOCK", 1)
     def test_combine_result_hash_with_one_sb(self, *args):
-        ba = BlockAggregator(ip=TEST_IP, signing_key=TEST_SK, ipc_ip="test_mn-ipc-sock", ipc_port=6967)
+        Keys.setup(TEST_SK)
+        ba = BlockAggregator(ip=TEST_IP, ipc_ip="test_mn-ipc-sock", ipc_port=6967)
 
         ba.manager = MagicMock()
         ba.send_new_block_notif = MagicMock()
@@ -262,7 +269,8 @@ class TestBlockAggregator(TestCase):
 
         # Sub block 0
         for i in range(DELEGATE_MAJORITY):
-            signature = build_test_merkle_sig(msg=bytes.fromhex(RESULT_HASH1), sk=TESTNET_DELEGATES[i]['sk'], vk=TESTNET_DELEGATES[i]['vk'])
+            Keys.setup(TESTNET_DELEGATES[i]['sk'])
+            signature = build_test_merkle_sig(msg=bytes.fromhex(RESULT_HASH1))
             sbc = SubBlockContender.create(RESULT_HASH1, INPUT_HASH1, MERKLE_LEAVES1, signature, TXS1, 0, GENESIS_BLOCK_HASH)
             ba.recv_sub_block_contender(TESTNET_DELEGATES[i]['vk'], sbc)
 
@@ -273,7 +281,8 @@ class TestBlockAggregator(TestCase):
 
     @BlockAggTester.test
     def test_combine_result_hash_with_multiple_sb(self, *args):
-        ba = BlockAggregator(ip=TEST_IP, signing_key=TEST_SK, ipc_ip="test_mn-ipc-sock", ipc_port=6967)
+        Keys.setup(TEST_SK)
+        ba = BlockAggregator(ip=TEST_IP, ipc_ip="test_mn-ipc-sock", ipc_port=6967)
 
         ba.manager = MagicMock()
         ba.build_task_list()
@@ -282,12 +291,14 @@ class TestBlockAggregator(TestCase):
 
         # Sub block 0
         for i in range(DELEGATE_MAJORITY):
-            signature = build_test_merkle_sig(msg=bytes.fromhex(RESULT_HASH1), sk=TESTNET_DELEGATES[i]['sk'], vk=TESTNET_DELEGATES[i]['vk'])
+            Keys.setup(TESTNET_DELEGATES[i]['sk'])
+            signature = build_test_merkle_sig(msg=bytes.fromhex(RESULT_HASH1))
             sbc = SubBlockContender.create(RESULT_HASH1, INPUT_HASH1, MERKLE_LEAVES1, signature, TXS1, 0, GENESIS_BLOCK_HASH)
             ba.recv_sub_block_contender(TESTNET_DELEGATES[i]['vk'], sbc)
 
         # Sub block 1
         for i in range(DELEGATE_MAJORITY):
+            Keys.setup(TESTNET_DELEGATES[i]['sk'])
             signature = build_test_merkle_sig(msg=bytes.fromhex(RESULT_HASH2), sk=TESTNET_DELEGATES[i]['sk'], vk=TESTNET_DELEGATES[i]['vk'])
             sbc = SubBlockContender.create(RESULT_HASH2, INPUT_HASH2, MERKLE_LEAVES2, signature, TXS2, 1, GENESIS_BLOCK_HASH)
             ba.recv_sub_block_contender(TESTNET_DELEGATES[i]['vk'], sbc)
@@ -299,7 +310,8 @@ class TestBlockAggregator(TestCase):
 
     @BlockAggTester.test
     def test_combine_result_hash_with_multiple_sb_with_extras(self, *args):
-        ba = BlockAggregator(ip=TEST_IP, signing_key=TEST_SK, ipc_ip="test_mn-ipc-sock", ipc_port=6967)
+        Keys.setup(TEST_SK)
+        ba = BlockAggregator(ip=TEST_IP, ipc_ip="test_mn-ipc-sock", ipc_port=6967)
 
         ba.manager = MagicMock()
         ba.send_new_block_notif = MagicMock()
@@ -310,12 +322,14 @@ class TestBlockAggregator(TestCase):
 
         # Sub block 0
         for i in range(NUM_DELEGATES):
-            signature = build_test_merkle_sig(msg=bytes.fromhex(RESULT_HASH1), sk=TESTNET_DELEGATES[i]['sk'], vk=TESTNET_DELEGATES[i]['vk'])
+            Keys.setup(TESTNET_DELEGATES[i]['sk'])
+            signature = build_test_merkle_sig(msg=bytes.fromhex(RESULT_HASH1))
             sbc = SubBlockContender.create(RESULT_HASH1, INPUT_HASH1, MERKLE_LEAVES1, signature, TXS1, 0, GENESIS_BLOCK_HASH)
             ba.recv_sub_block_contender(TESTNET_DELEGATES[i]['vk'], sbc)
 
         # Sub block 1
         for i in range(NUM_DELEGATES):
+            Keys.setup(TESTNET_DELEGATES[i]['sk'])
             signature = build_test_merkle_sig(msg=bytes.fromhex(RESULT_HASH2), sk=TESTNET_DELEGATES[i]['sk'], vk=TESTNET_DELEGATES[i]['vk'])
             sbc = SubBlockContender.create(RESULT_HASH2, INPUT_HASH2, MERKLE_LEAVES2, signature, TXS2, 1, GENESIS_BLOCK_HASH)
             ba.recv_sub_block_contender(TESTNET_DELEGATES[i]['vk'], sbc)
@@ -330,7 +344,8 @@ class TestBlockAggregator(TestCase):
     @mock.patch("cilantro.messages.block_data.block_metadata.NUM_SB_PER_BLOCK", 1)
     @mock.patch("cilantro.nodes.masternode.block_contender.NUM_SB_PER_BLOCK", 1)
     def test_recv_ignore_extra_sub_block_contenders(self, *args):
-        ba = BlockAggregator(ip=TEST_IP, signing_key=TEST_SK, ipc_ip="test_mn-ipc-sock", ipc_port=6967)
+        Keys.setup(TEST_SK)
+        ba = BlockAggregator(ip=TEST_IP, ipc_ip="test_mn-ipc-sock", ipc_port=6967)
         ba.manager = MagicMock()
         ba.build_task_list()
         ba.send_new_block_notif = MagicMock()
@@ -340,6 +355,7 @@ class TestBlockAggregator(TestCase):
         for i in range(DELEGATE_MAJORITY + 5):
             vk = TESTNET_DELEGATES[i%len(TESTNET_DELEGATES)]['vk']
             sk = TESTNET_DELEGATES[i%len(TESTNET_DELEGATES)]['sk']
+            Keys.setup(sk)
             signature = build_test_merkle_sig(msg=bytes.fromhex(RESULT_HASH1), sk=sk, vk=vk)
             sbc = SubBlockContender.create(RESULT_HASH1, INPUT_HASH1, MERKLE_LEAVES1, signature, TXS1, 0, GENESIS_BLOCK_HASH)
             ba.recv_sub_block_contender(vk, sbc)
@@ -356,7 +372,8 @@ class TestBlockAggregator(TestCase):
     # @mock.patch("cilantro.messages.block_data.block_metadata.NUM_SB_PER_BLOCK", 2)
     # def test_recv_result_hash_multiple_subblocks_consensus(self, *args):
     #
-    #     ba = BlockAggregator(ip=TEST_IP, signing_key=TEST_SK, ipc_ip="test_mn-ipc-sock", ipc_port=6967)
+        # Keys.setup(TEST_SK)
+    #     ba = BlockAggregator(ip=TEST_IP, ipc_ip="test_mn-ipc-sock", ipc_port=6967)
     #     ba.manager = MagicMock()
     #     ba.build_task_list()
     #     ba.is_catching_up = False
@@ -365,7 +382,7 @@ class TestBlockAggregator(TestCase):
     #
     #     # Sub block 0
     #     for i in range(DELEGATE_MAJORITY):
-    #         signature = build_test_merkle_sig(msg=bytes.fromhex(RESULT_HASH1), sk=TESTNET_DELEGATES[i]['sk'], vk=TESTNET_DELEGATES[i]['vk'])
+    #         signature = build_test_merkle_sig(msg=bytes.fromhex(RESULT_HASH1))
     #         sbc = SubBlockContender.create(RESULT_HASH1, INPUT_HASH1, MERKLE_LEAVES1, signature, TXS1, 0, GENESIS_BLOCK_HASH)
     #         ba.recv_sub_block_contender(sbc)
     #
@@ -394,7 +411,8 @@ class TestBlockAggregator(TestCase):
     @mock.patch("cilantro.messages.block_data.block_metadata.NUM_SB_PER_BLOCK", 1)
     @mock.patch("cilantro.nodes.masternode.block_contender.NUM_SB_PER_BLOCK", 1)
     def test_combine_result_hash_transactions_missing(self, *args):
-        ba = BlockAggregator(ip=TEST_IP, signing_key=TEST_SK, ipc_ip="test_mn-ipc-sock", ipc_port=6967)
+        Keys.setup(TEST_SK)
+        ba = BlockAggregator(ip=TEST_IP, ipc_ip="test_mn-ipc-sock", ipc_port=6967)
 
         ba.manager = MagicMock()
         ba.build_task_list()
@@ -402,7 +420,8 @@ class TestBlockAggregator(TestCase):
         ba.catchup_manager.is_catchup_done = MagicMock(return_value=True)
 
         for i in range(DELEGATE_MAJORITY):
-            signature = build_test_merkle_sig(msg=bytes.fromhex(RESULT_HASH1), sk=TESTNET_DELEGATES[i]['sk'], vk=TESTNET_DELEGATES[i]['vk'])
+            Keys.setup(TESTNET_DELEGATES[i]['sk'])
+            signature = build_test_merkle_sig(msg=bytes.fromhex(RESULT_HASH1))
             sbc = SubBlockContender.create(RESULT_HASH1, INPUT_HASH1, MERKLE_LEAVES1, signature, TXS1[:3], 0, GENESIS_BLOCK_HASH)
             ba.recv_sub_block_contender(TESTNET_DELEGATES[i]['vk'], sbc)
 

@@ -2,6 +2,7 @@ from unittest import TestCase
 from cilantro.protocol import wallet
 from cilantro.messages.consensus.merkle_signature import build_test_merkle_sig, MerkleSignature
 import json
+from cilantro.utils.keys import Keys
 
 
 class TestMerkleSignature(TestCase):
@@ -196,12 +197,14 @@ class TestMerkleSignature(TestCase):
     def test_create_from_payload(self):
         msg = b'this is a pretend merkle tree hash'
         sk, vk = wallet.new()
-        sig = MerkleSignature.create_from_payload(signing_key=sk, payload=msg)
+        Keys.setup(sk)
+        sig = MerkleSignature.create_from_payload(payload=msg)
         self.assertTrue(sig.verify(msg))
 
     def test_create_from_payload_cloned(self):
         msg = b'this is a pretend merkle tree hash'
         sk, vk = wallet.new()
-        sig = MerkleSignature.create_from_payload(signing_key=sk, payload=msg)
+        Keys.setup(sk)
+        sig = MerkleSignature.create_from_payload(payload=msg)
         clone = MerkleSignature.from_bytes(sig.serialize())
         self.assertTrue(clone.verify(msg))

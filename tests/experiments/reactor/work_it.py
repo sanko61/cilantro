@@ -1,4 +1,3 @@
-from cilantro.protocol.multiprocessing.worker import Worker
 from cilantro.messages.base.base_json import MessageBaseJson
 from cilantro.messages.envelope.envelope import Envelope
 from cilantro.protocol.states.decorators import *
@@ -64,7 +63,7 @@ class AnswerReply(MessageBaseJson):
         return self._data['answer']
 
 
-class Producer(Worker):
+class Producer:
     def setup(self):
         self.composer.add_pub(protocol='ipc', port=self.pubsub_port, ip=self.ip)
         self.composer.add_router(protocol='ipc', port=self.dealroute_port, ip=self.ip)

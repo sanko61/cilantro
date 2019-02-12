@@ -23,8 +23,8 @@ class TestSubBlock(TestCase):
         sb_idx = 0
 
         sk1, sk2 = 'AB' * 32, 'BC' * 32
-        sigs = [MerkleSignature.create_from_payload(sk1, tree.root),
-                MerkleSignature.create_from_payload(sk2, tree.root)]
+        sigs = [MerkleSignature.create_from_payload(tree.root),
+                MerkleSignature.create_from_payload(tree.root)]
 
         sb = SubBlock.create(merkle_root=merkle_root, signatures=sigs, merkle_leaves=tree.leaves_as_hex,
                              sub_block_idx=sb_idx, input_hash=input_hash, transactions=txs)
@@ -48,8 +48,8 @@ class TestSubBlock(TestCase):
         sb_idx = 0
 
         sk1, sk2 = 'AB' * 32, 'BC' * 32
-        sigs = [MerkleSignature.create_from_payload(sk1, tree.root),
-                MerkleSignature.create_from_payload(sk2, tree.root)]
+        sigs = [MerkleSignature.create_from_payload(tree.root),
+                MerkleSignature.create_from_payload(tree.root)]
 
         sb = SubBlock.create(merkle_root=merkle_root, signatures=sigs, merkle_leaves=tree.leaves_as_hex,
                              sub_block_idx=sb_idx, input_hash=input_hash, transactions=[])

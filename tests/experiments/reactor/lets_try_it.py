@@ -28,7 +28,7 @@ def run_pub():
     overlay_proc = LProcess(target=OverlayServer, kwargs={'sk': sk})
     overlay_proc.start()
 
-    t = PubSubAuthTester(signing_key=sk, name='Pub')
+    t = PubSubAuthTester(name='Pub')
 
     # Create 1 pub and start publishing
     t.add_pub_socket(ip=os.getenv('HOST_IP'))
@@ -50,7 +50,7 @@ def run_sub():
     overlay_proc = LProcess(target=OverlayServer, kwargs={'sk': sk})
     overlay_proc.start()
 
-    t = PubSubAuthTester(signing_key=sk, name='SUB')
+    t = PubSubAuthTester(name='SUB')
 
     # Create 1 sub
     t.add_sub_socket()

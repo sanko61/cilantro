@@ -23,6 +23,7 @@ from unittest import mock
 from unittest.mock import MagicMock
 #
 from cilantro.messages.envelope.envelope import Envelope
+from cilantro.utils.keys import Keys
 import time
 #
 #
@@ -39,8 +40,8 @@ class SBBTester:
 #
     @staticmethod
     def test(func):
-        @mock.patch("cilantro.protocol.multiprocessing.worker.asyncio", autospec=True)
-        @mock.patch("cilantro.protocol.multiprocessing.worker.SocketManager", autospec=True)
+        @mock.patch("cilantro.protocol.comm.socket_manager.asyncio", autospec=True)
+        @mock.patch("cilantro.protocol.comm.socket_manager.SocketManager", autospec=True)
         @mock.patch("cilantro.nodes.delegate.block_manager.asyncio", autospec=True)
         @mock.patch("cilantro.nodes.delegate.block_manager.SubBlockBuilder.run", autospec=True)
         def _func(*args, **kwargs):
@@ -59,13 +60,13 @@ class SBBTester:
         sbb.handle_sub_msg(frames, handler_key)
 
     @staticmethod
-    def create_tx_batch_env(num_txs: int, env_signing_key: str) -> Envelope:
+    def create_tx_batch_env(num_txs: int) -> Envelope:
         tx_batch = build_test_transaction_batch(num_tx=num_txs)
-        return Envelope.create_from_message(message=tx_batch, signing_key=env_signing_key)
+        return Envelope.create_from_message(message=tx_batch)
 
     @staticmethod
-    def send_tx_batch_to_sbb(sbb: SubBlockBuilder, handler_key, num_txs: int, masternode_sk: str=MN_SK1):
-        batch = SBBTester.create_tx_batch_env(num_txs=num_txs, env_signing_key=masternode_sk)
+    def send_tx_batch_to_sbb(sbb: SubBlockBuilder, handler_key, num_txs: int):
+        batch = SBBTester.create_tx_batch_env(num_txs=num_txs)
         SBBTester.send_sub_to_sbb(sbb, envelope=batch, handler_key=handler_key)
 
 
@@ -77,13 +78,15 @@ class TestSubBlockBuilder(TestCase):
     @mock.patch("cilantro.nodes.delegate.sub_block_builder.NUM_SUB_BLOCKS", 8)
     @mock.patch("cilantro.nodes.delegate.sub_block_builder.NUM_SB_BUILDERS", 1)
     def test_create_sub_sockets(self, *args):
-        sbb = SubBlockBuilder(ip=TEST_IP, signing_key=DELEGATE_SK, sbb_index=0, ipc_ip=IPC_IP, ipc_port=IPC_PORT)
+        Keys.setup(DELEGATE_SK)
+        sbb = SubBlockBuilder(ip=TEST_IP, sbb_index=0, ipc_ip=IPC_IP, ipc_port=IPC_PORT)
 
         self.assertEquals(len(sbb.sb_managers), 8)
 
     @SBBTester.test
     def test_create_empty_sbc(self, *args):
-        sbb = SubBlockBuilder(ip=TEST_IP, signing_key=DELEGATE_SK, sbb_index=0, ipc_ip=IPC_IP, ipc_port=IPC_PORT)
+        Keys.setup(DELEGATE_SK)
+        sbb = SubBlockBuilder(ip=TEST_IP, sbb_index=0, ipc_ip=IPC_IP, ipc_port=IPC_PORT)
         input_hash = 'A' * 64
         sbb_idx = 0
         cr_context = CRContext(sbb.client.available_dbs[0], sbb.client.master_db, sbb_idx)
@@ -108,11 +111,12 @@ class TestSubBlockBuilder(TestCase):
     @mock.patch("cilantro.nodes.delegate.sub_block_builder.TRANSACTIONS_PER_SUB_BLOCK", 4)
     @mock.patch("cilantro.messages.block_data.block_metadata.NUM_SB_PER_BLOCK", 1)
     def test_one_sb_recv_empty_tx_bag(self, *args):
-        sbb = SubBlockBuilder(ip=TEST_IP, signing_key=DELEGATE_SK, sbb_index=0, ipc_ip=IPC_IP, ipc_port=IPC_PORT)
+        Keys.setup(DELEGATE_SK)
+        sbb = SubBlockBuilder(ip=TEST_IP, sbb_index=0, ipc_ip=IPC_IP, ipc_port=IPC_PORT)
         self.assertEquals(len(sbb.sb_managers), 1)
 
         # Send an empty TX batch. This should get queued up as the SBB doesnt have a MakeNextBlock msg yet
-        empty_tx_batch_env = SBBTester.create_tx_batch_env(num_txs=0, env_signing_key=MN_SK1)
+        empty_tx_batch_env = SBBTester.create_tx_batch_env(num_txs=0)
         SBBTester.send_sub_to_sbb(sbb, envelope=empty_tx_batch_env, handler_key=0)
         self.assertEqual(len(sbb.sb_managers[0].pending_txs), 1)
 
@@ -133,14 +137,15 @@ class TestSubBlockBuilder(TestCase):
         """
         Tests handle_ipc_msg correctly calls handle_new_block when a NewBlockNotification is received
         """
-
-        sbb = SubBlockBuilder(ip=TEST_IP, signing_key=DELEGATE_SK, sbb_index=0, ipc_ip=IPC_IP, ipc_port=IPC_PORT)
+        Keys.setup(DELEGATE_SK)
+        sbb = SubBlockBuilder(ip=TEST_IP, sbb_index=0, ipc_ip=IPC_IP, ipc_port=IPC_PORT)
         sbb._send_msg_over_ipc = MagicMock()
 
         self.assertTrue(len(sbb.sb_managers) == 1)
 
         # Mock Envelope.from_bytes to return a mock envelope of our choosing
-        tx_batch_env = SBBTester.create_tx_batch_env(num_txs=4, env_signing_key=MN_SK1)
+        Keys.setup(MN_SK1)
+        tx_batch_env = SBBTester.create_tx_batch_env(num_txs=4)
         print("print tsns")
         print(tx_batch_env.message.transactions[0])
         SBBTester.send_sub_to_sbb(sbb, envelope=tx_batch_env, handler_key=0)
@@ -163,7 +168,8 @@ class TestSubBlockBuilder(TestCase):
     @mock.patch("cilantro.nodes.delegate.sub_block_builder.TRANSACTIONS_PER_SUB_BLOCK", 4)
     @mock.patch("cilantro.messages.block_data.block_metadata.NUM_SB_PER_BLOCK", 1)
     def test_handle_new_block_signal_calls_make_next_sub_block(self, *args):
-        sbb = SubBlockBuilder(ip=TEST_IP, signing_key=DELEGATE_SK, sbb_index=0, ipc_ip=IPC_IP, ipc_port=IPC_PORT)
+        Keys.setup(DELEGATE_SK)
+        sbb = SubBlockBuilder(ip=TEST_IP, sbb_index=0, ipc_ip=IPC_IP, ipc_port=IPC_PORT)
         sbb._make_next_sub_block = MagicMock()
 
         make_next_block = MakeNextBlock.create()
@@ -180,7 +186,8 @@ class TestSubBlockBuilder(TestCase):
     @mock.patch("cilantro.nodes.delegate.sub_block_builder.TRANSACTIONS_PER_SUB_BLOCK", 4)
     @mock.patch("cilantro.messages.block_data.block_metadata.NUM_SB_PER_BLOCK", 1)
     def test_single_tx_batch_adds_to_queue(self, *args):
-        sbb = SubBlockBuilder(ip=TEST_IP, signing_key=DELEGATE_SK, sbb_index=0, ipc_ip=IPC_IP, ipc_port=IPC_PORT)
+        Keys.setup(DELEGATE_SK)
+        sbb = SubBlockBuilder(ip=TEST_IP, sbb_index=0, ipc_ip=IPC_IP, ipc_port=IPC_PORT)
         # Note we do not send a MakeNextBlockNotifcation
 
         # Before we SBB receives any tx batches, we expect his (one) manager to be empty
@@ -188,7 +195,8 @@ class TestSubBlockBuilder(TestCase):
         self.assertEqual(len(sbb.sb_managers[0].pending_txs), 0)
 
         # Send first TX bag in. This should get queued.
-        tx_batch = SBBTester.create_tx_batch_env(num_txs=4, env_signing_key=MN_SK1)
+        Keys.setup(MN_SK1)
+        tx_batch = SBBTester.create_tx_batch_env(num_txs=4)
         SBBTester.send_sub_to_sbb(sbb, envelope=tx_batch, handler_key=0)
 
         self.assertEqual(len(sbb.sb_managers[0].pending_txs), 1)
@@ -203,7 +211,8 @@ class TestSubBlockBuilder(TestCase):
     @mock.patch("cilantro.nodes.delegate.sub_block_builder.TRANSACTIONS_PER_SUB_BLOCK", 4)
     @mock.patch("cilantro.messages.block_data.block_metadata.NUM_SB_PER_BLOCK", 1)
     def test_double_tx_batch_builds_sbb(self, *args):
-        sbb = SubBlockBuilder(ip=TEST_IP, signing_key=DELEGATE_SK, sbb_index=0, ipc_ip=IPC_IP, ipc_port=IPC_PORT)
+        Keys.setup(DELEGATE_SK)
+        sbb = SubBlockBuilder(ip=TEST_IP, sbb_index=0, ipc_ip=IPC_IP, ipc_port=IPC_PORT)
         sbb._execute_next_sb = MagicMock()
 
         # First, fake a MakeNextBlock msg from BlockManager
@@ -211,7 +220,8 @@ class TestSubBlockBuilder(TestCase):
         SBBTester.send_ipc_to_sbb(sbb, make_next_block)
 
         # Send first TX bag in. Since w sent a MakeNextBlock notif, this should trigger a block construction
-        tx_batch_env = SBBTester.create_tx_batch_env(num_txs=4, env_signing_key=MN_SK1)
+        Keys.setup(MN_SK1)
+        tx_batch_env = SBBTester.create_tx_batch_env(num_txs=4)
         input_hash1 = Hasher.hash(tx_batch_env)
         SBBTester.send_sub_to_sbb(sbb, envelope=tx_batch_env, handler_key=0)
 
@@ -240,7 +250,8 @@ class TestSubBlockBuilder(TestCase):
 
         sb_rep = [(c, status, state) for c, state, status, in zip(contract_txs, states, statuses)]
 
-        sbb = SubBlockBuilder(ip=TEST_IP, signing_key=DELEGATE_SK, sbb_index=0, ipc_ip=IPC_IP, ipc_port=IPC_PORT)
+        Keys.setup(DELEGATE_SK)
+        sbb = SubBlockBuilder(ip=TEST_IP, sbb_index=0, ipc_ip=IPC_IP, ipc_port=IPC_PORT)
         sbb._send_msg_over_ipc = MagicMock()
 
         mock_cr_ctx = MagicMock()

@@ -39,13 +39,14 @@ from seneca.engine.client import NUM_CACHES
 from seneca.engine.client import SenecaClient
 from seneca.engine.conflict_resolution import CRContext
 from cilantro.protocol import wallet
-from cilantro.protocol.multiprocessing.worker import Worker
 
 from cilantro.protocol.structures.merkle_tree import MerkleTree
 from cilantro.protocol.structures.linked_hashtable import LinkedHashTable
 
 from cilantro.utils.hasher import Hasher
 from cilantro.utils.utils import int_to_bytes, bytes_to_int
+from cilantro.utils.keys import Keys
+from cilantro.protocol.comm.socket_manager import SocketManager
 
 from enum import Enum, unique
 import asyncio, zmq.asyncio, time, os
@@ -75,16 +76,18 @@ class SubBlockManager:
         self.num_pending_sb = 0
 
 
-class SubBlockBuilder(Worker):
-    def __init__(self, ip: str, signing_key: str, ipc_ip: str, ipc_port: int, sbb_index: int, *args, **kwargs):
-        super().__init__(signing_key=signing_key, name="SubBlockBuilder_{}".format(sbb_index))
+class SubBlockBuilder:
 
+    def __init__(self, ip: str, ipc_ip: str, ipc_port: int, sbb_index: int, *args, **kwargs):
+
+        self.log = get_logger('SubBlockBuilder-{}'.format(sbb_index))
         self.tasks = []
+        self.manager = SocketManager()
 
         # These variables are used only for testing
         self.bad_actor = bool(os.getenv('BAD_ACTOR'))
         if self.bad_actor:
-            self.log.critical("Warning!!! Bad actor mode enabled for delegate with vk {}".format(self.verifying_key))
+            self.log.critical("Warning!!! Bad actor mode enabled for delegate with vk {}".format(Keys.vk))
             self.good_sb_count = 0
             self.fail_idxs = set([int(i) for i in os.getenv('SB_IDX_FAIL').split(',')])
             self.fail_interval = int(os.getenv('NUM_SUCC_SBS'))
@@ -93,7 +96,7 @@ class SubBlockBuilder(Worker):
         self.sbb_index = sbb_index
         self.startup = True
         # self.pending_block_index = -1
-        self.client = SenecaClient(sbb_idx=sbb_index, num_sbb=NUM_SB_PER_BLOCK, loop=self.loop)
+        self.client = SenecaClient(sbb_idx=sbb_index, num_sbb=NUM_SB_PER_BLOCK)
         # raghu todo may need multiple clients here. NUM_SB_PER_BLOCK needs to be same for all blocks
         # self.clients = []
         # for i in range(NUM_SB_PER_BLOCK_PER_BUILDER):
@@ -290,10 +293,10 @@ class SubBlockBuilder(Worker):
         Creates an Empty Sub Block Contender
         """
         self.log.info("Building empty sub block contender for input hash {}".format(cr_context.input_hash))
-        signature = wallet.sign(self.signing_key, bytes.fromhex(cr_context.input_hash))
+        signature = wallet.sign(Keys.sk, bytes.fromhex(cr_context.input_hash))
         merkle_sig = MerkleSignature.create(sig_hex=signature,
                                             timestamp=str(int(time.time())),
-                                            sender=self.verifying_key)
+                                            sender=Keys.vk)
         sbc = SubBlockContender.create_empty_sublock(input_hash=cr_context.input_hash,
                                                      sub_block_index=cr_context.sbb_idx, signature=merkle_sig,
                                                      prev_block_hash=StateDriver.get_latest_block_hash())
@@ -326,10 +329,10 @@ class SubBlockBuilder(Worker):
 
         # build sbc
         merkle = MerkleTree.from_raw_transactions(txs_data_serialized)
-        signature = wallet.sign(self.signing_key, merkle.root)
+        signature = wallet.sign(Keys.sk, merkle.root)
         merkle_sig = MerkleSignature.create(sig_hex=signature,
                                             timestamp=str(time.time()),
-                                            sender=self.verifying_key)
+                                            sender=Keys.vk)
         sbc = SubBlockContender.create(result_hash=merkle.root_as_hex, input_hash=cr_context.input_hash,
                                        merkle_leaves=merkle.leaves, sub_block_index=cr_context.sbb_idx,
                                        signature=merkle_sig, transactions=txs_data,

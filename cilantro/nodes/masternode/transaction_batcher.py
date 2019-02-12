@@ -6,8 +6,6 @@ from cilantro.constants.ports import MN_NEW_BLOCK_PUB_PORT, MN_TX_PUB_PORT
 from cilantro.constants.system_config import BATCH_SLEEP_INTERVAL, NO_ACTIVITY_SLEEP, NUM_BLOCKS
 from cilantro.messages.signals.master import EmptyBlockMade, NonEmptyBlockMade
 from cilantro.utils.utils import int_to_bytes, bytes_to_int
-
-from cilantro.protocol.multiprocessing.worker import Worker
 from cilantro.messages.transaction.ordering import OrderingContainer
 from cilantro.messages.transaction.batch import TransactionBatch
 
@@ -15,10 +13,9 @@ import zmq.asyncio
 import asyncio, time, os
 
 
-class TransactionBatcher(Worker):
+class TransactionBatcher:
 
     def __init__(self, queue, ip, ipc_ip, ipc_port, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self.queue, self.ip = queue, ip
 
         self.tasks = []

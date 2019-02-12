@@ -5,6 +5,7 @@ from cilantro.logger import get_logger
 from cilantro.messages.consensus.merkle_signature import MerkleSignature
 from cilantro.messages.transaction.data import TransactionData
 from typing import List
+from cilantro.utils.keys import Keys
 
 
 import capnp
@@ -106,7 +107,10 @@ class SubBlockBuilder:
         merkle_root = tree.root_as_hex
 
         signing_keys = signing_keys or ['AB' * 32, 'BC' * 32]
-        sigs = [MerkleSignature.create_from_payload(sk, tree.root) for sk in signing_keys]
+        sigs = []
+        for sk in signing_keys:
+            Keys.setup(sk)
+            sigs.append(MerkleSignature.create_from_payload(tree.root))
 
         sb = SubBlock.create(merkle_root=merkle_root, signatures=sigs, merkle_leaves=tree.leaves_as_hex,
                              sub_block_idx=idx, input_hash=input_hash, transactions=transactions)

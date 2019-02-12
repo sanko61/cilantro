@@ -9,6 +9,7 @@ from cilantro.utils import int_to_bytes
 from unittest import TestCase
 from unittest import mock
 from unittest.mock import MagicMock
+from cilantro.utils.keys import Keys
 
 from cilantro.messages.envelope.envelope import Envelope
 from cilantro.messages.block_data.block_metadata import NewBlockNotification
@@ -21,17 +22,18 @@ from cilantro.constants.testnet import TESTNET_DELEGATES
 TEST_IP = '127.0.0.1'
 TEST_SK = TESTNET_DELEGATES[0]['sk']
 
-
 class TestBlockManager(TestCase):
 
+    def setUp(self):
+        super().setUp()
+        Keys.setup(TEST_SK)
+
     # TODO we can probly DRY all this patching/setup code in a setup method or something
-    @mock.patch("cilantro.protocol.multiprocessing.worker.asyncio", autospec=True)
-    @mock.patch("cilantro.protocol.multiprocessing.worker.SocketManager", autospec=True)
     @mock.patch("cilantro.nodes.delegate.block_manager.SubBlockBuilder", autospec=True)
     @mock.patch("cilantro.nodes.delegate.block_manager.asyncio", autospec=True)
     @mock.patch("cilantro.nodes.delegate.block_manager.BlockManager.run", autospec=True)
-    def test_build_task_list_creates_ipc_router(self, mock_run_method, mock_bm_asyncio, mock_sbb, mock_manager, mock_worker_asyncio):
-        bm = BlockManager(ip=TEST_IP, signing_key=TEST_SK)
+    def test_build_task_list_creates_ipc_router(self, mock_sbb, mock_manager, mock_worker_asyncio):
+        bm = BlockManager(ip=TEST_IP)
 
 
         # Attach a mock SockManager so create_socket calls return mock objects. Whenever a method is called on a mock
@@ -63,13 +65,11 @@ class TestBlockManager(TestCase):
         mock_ipc_router.add_handler.assert_called()
         self.assertTrue(mock_router_handler_task in bm.tasks)
 
-    @mock.patch("cilantro.protocol.multiprocessing.worker.asyncio", autospec=True)
-    @mock.patch("cilantro.protocol.multiprocessing.worker.SocketManager", autospec=True)
     @mock.patch("cilantro.nodes.delegate.block_manager.SubBlockBuilder", autospec=True)
     @mock.patch("cilantro.nodes.delegate.block_manager.asyncio", autospec=True)
     @mock.patch("cilantro.nodes.delegate.block_manager.BlockManager.run", autospec=True)
-    def test_handle_ipc_msg(self, mock_run_method, mock_bm_asyncio, mock_sbb, mock_manager, mock_worker_asyncio):
-        bm = BlockManager(ip=TEST_IP, signing_key=TEST_SK)
+    def test_handle_ipc_msg(self, mock_sbb, mock_worker_asyncio,  mock_manager):
+        bm = BlockManager(ip=TEST_IP)
         bm.manager = MagicMock()
         bm.ipc_router = MagicMock()
 
@@ -82,8 +82,6 @@ class TestBlockManager(TestCase):
         # TODO assert handle_ipc_msg does what expected
 
     # TODO comment this back in when catchup is fixed
-    # @mock.patch("cilantro.protocol.multiprocessing.worker.asyncio", autospec=True)
-    # @mock.patch("cilantro.protocol.multiprocessing.worker.SocketManager", autospec=True)
     # @mock.patch("cilantro.nodes.delegate.block_manager.SubBlockBuilder", autospec=True)
     # @mock.patch("cilantro.nodes.delegate.block_manager.asyncio", autospec=True)
     # @mock.patch("cilantro.nodes.delegate.block_manager.BlockManager.run", autospec=True)
@@ -92,7 +90,7 @@ class TestBlockManager(TestCase):
     #     """
     #     Tests handle_sub_msg correctly calls handle_new_block when a NewBlockNotification is received
     #     """
-    #     bm = BlockManager(ip=TEST_IP, signing_key=TEST_SK)
+    #     bm = BlockManager(ip=TEST_IP)
     #     bm.manager = MagicMock()
     #     bm.handle_new_block = MagicMock()  # Mock out .handle_new_block
     #     bm.build_task_list()

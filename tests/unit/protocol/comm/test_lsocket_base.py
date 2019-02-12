@@ -11,7 +11,8 @@ from cilantro.messages.base.base_signal import SignalBase
 
 def _build_mock_manager():
     manager = MagicMock(spec=SocketManager)
-    manager.signing_key, manager.verifying_key = wallet.new()
+    sk, vk = wallet.new()
+    Keys.setup(sk)
     manager.overlay_client = MagicMock()
     manager.overlay_client.get_node_from_vk = MagicMock(side_effect=list(range(100)))
     manager.pending_lookups = {}

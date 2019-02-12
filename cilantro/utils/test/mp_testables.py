@@ -88,8 +88,8 @@ class MPComposer(MPTesterBase):
 
         router = MagicMock()
         ip = os.getenv('HOST_IP', '127.0.0.1')
-        manager = ExecutorManager(signing_key=sk, router=router, name=name, loop=loop, context=ctx)
-        composer = Composer(manager=manager, signing_key=sk, ip=ip, name=name)
+        manager = ExecutorManager(router=router, name=name, loop=loop, context=ctx)
+        composer = Composer(manager=manager, ip=ip, name=name)
 
         return composer, loop, []
 

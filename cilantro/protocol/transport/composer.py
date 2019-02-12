@@ -50,13 +50,11 @@ def vk_lookup(func):
 
 
 class Composer:
-    def __init__(self, manager: ExecutorManager, signing_key: str, ip, name='Node'):
+    def __init__(self, manager: ExecutorManager, ip, name='Node'):
         super().__init__()
         self.log = get_logger("{}.Composer".format(name))
         self.manager = manager
         self.ip = ip
-        self.signing_key = signing_key
-        self.verifying_key = wallet.get_vk(self.signing_key)
 
         self.overlay_cli = OverlayClient(self._handle_overlay_event, loop=manager.loop, ctx=manager.context)
         self.overlay_ready = False
@@ -122,7 +120,7 @@ class Composer:
         assert type(msg) is not Envelope, "Attempted to package a 'message' that is already an envelope"
         assert issubclass(type(msg), MessageBase), "Attempted to package a message that is not a MessageBase subclass"
 
-        return Envelope.create_from_message(message=msg, signing_key=self.signing_key, verifying_key=self.verifying_key)
+        return Envelope.create_from_message(message=msg)
 
     def _package_reply(self, reply: MessageBase, req_env: Envelope) -> Envelope:
         """
@@ -136,8 +134,7 @@ class Composer:
         request_uuid = req_env.meta.uuid
         reply_uuid = EnvelopeAuth.reply_uuid(request_uuid)
 
-        return Envelope.create_from_message(message=reply, signing_key=self.signing_key,
-                                            verifying_key=self.verifying_key, uuid=reply_uuid)
+        return Envelope.create_from_message(message=reply, uuid=reply_uuid)
 
     def _build_url(self, protocol, port, ip='', vk=''):
         assert protocol in ('ipc', 'tcp'), "Got protocol {}, but only tcp and ipc are supported".format(protocol)
