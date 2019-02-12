@@ -1,6 +1,7 @@
 from cilantro.logger.base import get_logger
 from cilantro.utils.keys import Keys
 from cilantro.protocol.structures.merkle_tree import MerkleTree
+from cilantro.protocol.multiprocessing.worker import Worker
 
 from cilantro.storage.state import StateDriver
 from cilantro.storage.vkbook import VKBook
@@ -32,7 +33,7 @@ import asyncio, zmq, os, time, itertools
 from collections import defaultdict
 
 
-class BlockAggregator:
+class BlockAggregator(Worker):
 
     def __init__(self, ip, ipc_ip, ipc_port, *args, **kwargs):
         self.log = get_logger("BlockAggregator[{}]".format(Keys.vk[:8]))

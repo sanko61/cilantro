@@ -40,6 +40,7 @@ from cilantro.messages.signals.delegate import MakeNextBlock, DiscardPrevBlock
 from cilantro.messages.signals.node import Ready
 from cilantro.messages.block_data.state_update import *
 from cilantro.utils.keys import Keys
+from cilantro.protocol.multiprocessing.worker import Worker
 
 import asyncio, zmq, os, time, random
 from collections import defaultdict
@@ -84,7 +85,7 @@ class DBState:
         self.input_hash_map.clear()
 
 
-class BlockManager:
+class BlockManager(Worker):
 
     def __init__(self, ip, *args, **kwargs):
         self.log = get_logger("BlockManager[{}]".format(Keys.vk[:8]))

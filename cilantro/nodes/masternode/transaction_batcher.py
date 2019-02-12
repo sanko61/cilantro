@@ -8,12 +8,13 @@ from cilantro.messages.signals.master import EmptyBlockMade, NonEmptyBlockMade
 from cilantro.utils.utils import int_to_bytes, bytes_to_int
 from cilantro.messages.transaction.ordering import OrderingContainer
 from cilantro.messages.transaction.batch import TransactionBatch
+from cilantro.protocol.multiprocessing.worker import Worker
 
 import zmq.asyncio
 import asyncio, time, os
 
 
-class TransactionBatcher:
+class TransactionBatcher(Worker):
 
     def __init__(self, queue, ip, ipc_ip, ipc_port, *args, **kwargs):
         self.queue, self.ip = queue, ip

@@ -1,5 +1,7 @@
 from cilantro.utils.keys import Keys
 
+from cilantro.protocol.multiprocessing.worker import Worker
+
 import os
 import asyncio
 import zmq.asyncio
@@ -21,7 +23,7 @@ def wrap_func(fn, *args, **kwargs):
     return wrapper
 
 
-class PubSubAuthTester:
+class PubSubAuthTester(Worker):
 
     def __init__(self, *args, **kwargs):
 

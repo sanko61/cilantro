@@ -1,5 +1,6 @@
 from cilantro.utils.keys import Keys
 from cilantro.messages.base.base import MessageBase
+from cilantro.protocol.multiprocessing.worker import Worker
 
 import os
 import asyncio
@@ -21,7 +22,7 @@ def wrap_func(fn, *args, **kwargs):
     return wrapper
 
 
-class RouterAuthTester:
+class RouterAuthTester(Worker):
 
     def __init__(self, *args, **kwargs):
         self.router = None
