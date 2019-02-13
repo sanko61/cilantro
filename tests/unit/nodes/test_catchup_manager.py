@@ -114,6 +114,7 @@ class TestCatchupManager(TestCase):
         self._assert_router_called_with_msg(cm, msg=expected_req_1, possible_headers=(vk1.encode(), vk2.encode()))
         self._assert_router_called_with_msg(cm, msg=expected_req_2, possible_headers=(vk1.encode(), vk2.encode()))
 
+
     def test_recv_block_idx_req_sends_correct_idx_replies_from_block_num(self):
         cm = self._build_manager()
         # cm.run_catchup()
