@@ -63,14 +63,14 @@ class Discovery:
         self.log.fatal('Discovery DIED')
 
     def request(self, ip):
-        # TODO this is soooo sketch wrapping this in a try/except. Why does it give a 'Could not route host' error??
-        # --davis
         try:
             self.sock.send_multipart([ip, self.pepper])
         except Exception as e:
             self.log.warning("Got ZMQError sending discovery msg\n{}".format(e))
 
     def reply(self, ip):
+        if self.is_listen_ready:
+            self.log.info("{} Replying to {}".format(self.host_ip, ip))
         if self.is_listen_ready and ip != self.host_ip:
             self.sock.send_multipart([ip, self.pepper, self.vk.encode()])
             self.is_connected = True
@@ -125,6 +125,7 @@ class Discovery:
                     len(self.discovered_nodes), self.discovered_nodes
                 ))
                 return True
+
 
         self.log.info('Did not find enough nodes after {} tries ({}/{}).'.format(
             try_count,
