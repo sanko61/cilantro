@@ -64,7 +64,7 @@ else:
     # TODO -- UNHACK ALL THIS
     # global MN_WITNESS_MAP, WITNESS_MN_MAP
     from cilantro.storage.vkbook import VKBook
-    print("Building WITNESS_MN_MAP manually")
+    # print("Building WITNESS_MN_MAP manually")
     r = 1
     # Build MN_WITNESS_MAP/WITNESS_MN_MAP
     for i, mn_vk in enumerate(VKBook.get_masternodes()):
@@ -74,5 +74,5 @@ else:
         for w in witnesses:
             WITNESS_MN_MAP[w] = mn_vk
 
-    log.notice("MN_WITNESS_MAP: {}".format(MN_WITNESS_MAP))
-    log.notice("WITNESS_MN_MAP: {}".format(WITNESS_MN_MAP))
+    # log.notice("MN_WITNESS_MAP: {}".format(MN_WITNESS_MAP))
+    # log.notice("WITNESS_MN_MAP: {}".format(WITNESS_MN_MAP))
