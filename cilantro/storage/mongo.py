@@ -180,6 +180,8 @@ class MDB:
             blk_list.append(blk)
 
         cls.log.debugv("query_index returning dict {}".format(blk_list))
+        if len(blk_list) > 1:
+            assert blk_list[0] < blk_list[-1], "we expect blk list to be in ascending"
         return blk_list
 
     @classmethod
