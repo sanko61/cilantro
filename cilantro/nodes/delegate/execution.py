@@ -34,10 +34,12 @@ def setPoolExecutor(executor):
     global PoolExecutor
     PoolExecutor = executor
 
-
-def execute_tx(transaction, stamp_cost, environment: dict={}, tx_number=0):
+def execute_tx(transaction, stamp_cost, environment: dict={}, tx_number=0, ini_writes=None):
     global PoolExecutor
     executor = PoolExecutor
+    if ini_writes is not None:
+        log.debug(f'ini_writes={ini_writes}')
+        executor.driver.pending_writes = ini_writes
     output = executor.execute(
         sender=transaction['payload']['sender'],
         contract_name=transaction['payload']['contract'],
@@ -53,6 +55,7 @@ def execute_tx(transaction, stamp_cost, environment: dict={}, tx_number=0):
     tx_hash = tx_hash_from_tx(transaction)
 
     writes = [{'key': k, 'value': v} for k, v in output['writes'].items()]
+    p_writes = executor.driver.pending_writes
 
     tx_output = {
         'hash': tx_hash,
@@ -61,7 +64,8 @@ def execute_tx(transaction, stamp_cost, environment: dict={}, tx_number=0):
         'state': writes,
         'stamps_used': output['stamps_used'],
         'result': safe_repr(output['result']),
-        'tx_number': tx_number
+        'tx_number': tx_number,
+        'p_writes': p_writes,
     }
     tx_output = format_dictionary(tx_output)
     executor.driver.pending_writes.clear() # add
@@ -100,7 +104,11 @@ class ProcessThread(mp.Process):
                     # work()
                     try:
                         tx_input = x
-                        output = execute_tx(tx_input[0], tx_input[1], environment= tx_input[2], tx_number=tx_input[3])
+                        if len(tx_input) >= 5:
+                            ini_ps = tx_input[4]
+                        else:
+                            ini_ps = None
+                        output = execute_tx(tx_input[0], tx_input[1], environment= tx_input[2], tx_number=tx_input[3], ini_writes=ini_ps)
                         self.q_out.put(output)
                     except Exception as err:
                         log.error(f"Worker stopped after exception={err}")
@@ -233,16 +241,24 @@ def execute_tx_batch(executor, driver, batch, timestamp, input_hash, stamp_cost,
 
 
     if len(tx_bad) > 0:
+        sorted_tx_data = sorted(tx_data, key = lambda tx: tx['tx_number'])
+        ini_pwrites = {}
+        for tx in sorted_tx_data:
+            if tx['status']==0:
+                for k,v in tx['p_writes'].items():
+                    if v is not None:
+                        ini_pwrites[k] = v
+
         free_pool(work_pool)
         work_pool, active_workers = get_pool(len(tx_bad))
 
-        log.debug(f'Bad transactions {len(tx_bad)}. Try to rerun {active_workers}  {work_pool}')
+        log.debug(f'Conflict transactions {len(tx_bad)}. Try to rerun {active_workers}  {work_pool}')
         sleep(TX_RERUN_SLEEP)
         i = 0
         for transaction in batch['transactions']:
             if i in tx_bad:
                 log.debug(f'rerun Transaction {i}')
-                it = (transaction, stamp_cost, environment, i)
+                it = (transaction, stamp_cost, environment, i, ini_pwrites)
                 i_prc = work_pool[i % active_workers]
                 pool[i_prc].q_in.put(it)
 
@@ -255,7 +271,20 @@ def execute_tx_batch(executor, driver, batch, timestamp, input_hash, stamp_cost,
         for r in result_list2:
             tx_data.append(r)
 
-    return tx_data
+    out_data = []
+    for tx in tx_data:
+        tx_output = {
+            'hash': tx['hash'],
+            'transaction': tx['transaction'],
+            'status': tx['status'],
+            'state': tx['state'],
+            'stamps_used': tx['stamps_used'],
+            'result': tx['result'],
+        }
+        tx_output = format_dictionary(tx_output)
+        out_data.append(tx_output)
+
+    return out_data
 
 
 def execute_work(executor, driver, work, wallet, previous_block_hash, current_height=0, stamp_cost=20000, parallelism=4):
