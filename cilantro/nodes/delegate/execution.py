@@ -38,8 +38,13 @@ def execute_tx(transaction, stamp_cost, environment: dict={}, tx_number=0, ini_w
     global PoolExecutor
     executor = PoolExecutor
     if ini_writes is not None:
-        log.debug(f'ini_writes={ini_writes}')
-        executor.driver.pending_writes = ini_writes
+        log.debug(f'ini_writes={ini_writes} cash ={executor.driver.cache}')
+        p_cashe = executor.driver.cache
+        for k, v in ini_writes.items():
+            if k in p_cashe:
+                log.debug(f"deleted {k} from cash")
+                del p_cashe[k]
+
     output = executor.execute(
         sender=transaction['payload']['sender'],
         contract_name=transaction['payload']['contract'],
@@ -56,6 +61,7 @@ def execute_tx(transaction, stamp_cost, environment: dict={}, tx_number=0, ini_w
 
     writes = [{'key': k, 'value': v} for k, v in output['writes'].items()]
     p_writes = executor.driver.pending_writes
+    p_reads = executor.driver.reads
 
     tx_output = {
         'hash': tx_hash,
@@ -66,6 +72,7 @@ def execute_tx(transaction, stamp_cost, environment: dict={}, tx_number=0, ini_w
         'result': safe_repr(output['result']),
         'tx_number': tx_number,
         'p_writes': p_writes,
+        'reads': p_reads,
     }
     tx_output = format_dictionary(tx_output)
     executor.driver.pending_writes.clear() # add
@@ -203,6 +210,73 @@ def wait_tx_result(N_tx, work_pool):
     return rez
 
 
+def check_conflict(tx_data):
+    tx_bad0 = set()
+    for tx0 in tx_data:
+        tx_hash = tx0['hash']
+        conflict = False
+        for tx in tx_data:
+            if tx_hash != tx['hash']:
+                for k, v in tx['p_writes'].items():
+                    if v is not None:
+                        if k in tx0['reads']:
+                            conflict = True
+                            break
+                        if k in tx0['p_writes']:
+                            conflict = True
+                            break
+                if conflict:
+                    tx_bad0.append(tx_hash)
+                    tx_bad0.append(tx['hash'])
+    tx_bad = list(tx_bad0)
+    return tx_bad
+
+
+def check_conflict2(rez_batch):
+    tx_bad0 = set()
+    tx_index = {}
+    i1a = 0
+    for tx_data0 in rez_batch:
+        i2a = 0
+        for tx0 in tx_data0:
+            tx_hash = tx0['hash']
+            conflict = False
+            i1b = 0
+            for tx_data in rez_batch:
+                i2b = 0
+                for tx in tx_data:
+                    if tx_hash != tx['hash']:
+                        for k, v in tx['p_writes'].items():
+                            if v is not None:
+                                if k in tx0['reads']:
+                                    conflict = True
+                                    break
+                                if k in tx0['p_writes']:
+                                    conflict = True
+                                    break
+                    if conflict:
+                        tx_bad0.append(tx['hash'])  # first
+                        tx_bad0.append(tx_hash)  # second
+                        tx_index[tx_hash] = (i1a,i2a)
+                        tx_index[tx['hash']] = (i1b, i2b)
+                    i2b += 1
+            i2a += 1
+    tx_bad = list(tx_bad0)
+
+
+    #DEBUG mode tx_bad.append(rez_batch[0][0]['hash'])
+    #DEBUG mode tx_index[rez_batch[0][0]['hash']] = (0,0)
+    tx_bad = []
+    tx_index = {}
+    for i1 in range(len(rez_batch)):
+        for i2 in range(len(rez_batch[i1])):
+            tx_bad.append(rez_batch[i1][i2]['hash'])
+            tx_index[rez_batch[i1][i2]['hash']] = (i1,i2)
+    # DEBUG mode  END
+
+    return tx_bad, tx_index
+
+
 def execute_tx_batch(executor, driver, batch, timestamp, input_hash, stamp_cost, bhash='0' * 64, num=1):
 
     environment = generate_environment(driver, timestamp, input_hash, bhash, num)
@@ -216,8 +290,6 @@ def execute_tx_batch(executor, driver, batch, timestamp, input_hash, stamp_cost,
     work_pool, active_workers = get_pool(len(batch['transactions']))
     i= 0
     s = time()
-    global result_list2
-    result_list2 = []
     log.debug(f"Start Pool len={active_workers}  prc={work_pool}")
 
     for transaction in batch['transactions']:
@@ -234,43 +306,13 @@ def execute_tx_batch(executor, driver, batch, timestamp, input_hash, stamp_cost,
     log.debug(f"End of pool. result_list={result_list2}")
 
     tx_data = copy.deepcopy(result_list2)
-    result_list2 = []
     tx_done_ok = [ tx['tx_number'] for tx in tx_data]
-    tx_bad = [ tx['tx_number']  for tx in tx_data  if tx['status'] != 0]
-    log.debug(f"tx_data={len(tx_data)}  tx_done_ok={tx_done_ok}  tx_bad={tx_bad} duration= {time() - s}")
+    log.debug(f"tx_data={len(tx_data)}  tx_done_ok={tx_done_ok} duration= {time() - s}")
+
+    return tx_data
 
 
-    if len(tx_bad) > 0:
-        sorted_tx_data = sorted(tx_data, key = lambda tx: tx['tx_number'])
-        ini_pwrites = {}
-        for tx in sorted_tx_data:
-            if tx['status']==0:
-                for k,v in tx['p_writes'].items():
-                    if v is not None:
-                        ini_pwrites[k] = v
-
-        free_pool(work_pool)
-        work_pool, active_workers = get_pool(len(tx_bad))
-
-        log.debug(f'Conflict transactions {len(tx_bad)}. Try to rerun {active_workers}  {work_pool}')
-        sleep(TX_RERUN_SLEEP)
-        i = 0
-        for transaction in batch['transactions']:
-            if i in tx_bad:
-                log.debug(f'rerun Transaction {i}')
-                it = (transaction, stamp_cost, environment, i, ini_pwrites)
-                i_prc = work_pool[i % active_workers]
-                pool[i_prc].q_in.put(it)
-
-            i += 1
-        N_tx_rerun = i
-        result_list2 =  wait_tx_result(N_tx_rerun, work_pool)
-        log.debug(f"End of rerun. result_list={result_list2}")
-        free_pool(work_pool)
-
-        for r in result_list2:
-            tx_data.append(r)
-
+def prepare_data(tx_data):
     out_data = []
     for tx in tx_data:
         tx_output = {
@@ -283,15 +325,49 @@ def execute_tx_batch(executor, driver, batch, timestamp, input_hash, stamp_cost,
         }
         tx_output = format_dictionary(tx_output)
         out_data.append(tx_output)
-
     return out_data
+
+
+def rerun_txs(executor, driver, batch, timestamp, input_hash, stamp_cost, bhash='0' * 64, num=1, tx_idx=None, result0=None,):
+
+    environment = generate_environment(driver, timestamp, input_hash, bhash, num)
+    setPoolExecutor(executor)
+
+    global pool
+    work_pool, active_workers = get_pool(1) #One core for conflicting txs
+
+    i= 0
+    s = time()
+    log.debug(f"Start rerun len={active_workers}  prc={work_pool}")
+    executor.driver.pending_writes.clear()
+
+    for tx_hash in batch:
+        i1,i2 = tx_idx[tx_hash]
+        transaction = result0[i1][i2]['transaction']
+        log.debug(f'Transaction {i} {transaction} {type(executor)}')
+        ini_pwrites = result0[i1][i2]['p_writes']
+        it = (transaction, stamp_cost, environment, i, ini_pwrites)
+        i_prc =work_pool[0]
+        pool[i_prc].q_in.put(it)
+        i += 1
+
+    N_tx = i
+    tx_data = wait_tx_result(N_tx, work_pool)
+    free_pool(work_pool)
+    i = 0
+    for tx_hash in batch:
+        i1,i2 = tx_idx[tx_hash]
+        result0[i1][i2] = tx_data[i]
+        i += 1
+
+    log.debug(f"End of rerun. result_list={result0} duration= {time() - s}")
+
+    return result0
 
 
 def execute_work(executor, driver, work, wallet, previous_block_hash, current_height=0, stamp_cost=20000, parallelism=4):
     # Assume single threaded, single process for now.
-    subblocks = []
-    i = 0
-
+    rez_batch = []
     for tx_batch in work:
         results = execute_tx_batch(
             executor=executor,
@@ -303,6 +379,30 @@ def execute_work(executor, driver, work, wallet, previous_block_hash, current_he
             bhash=previous_block_hash,
             num=current_height
         )
+        rez_batch.append(results)
+
+    tx_bad, tx_bad_idx = check_conflict2(rez_batch)
+    log.debug(f"tx_bad={tx_bad} tx_bad_idx= {tx_bad_idx}")
+
+    rez_batch2 = rerun_txs(
+        executor=executor,
+        driver=driver,
+        batch=tx_bad,
+        timestamp= work[0]['timestamp'],
+        input_hash=work[0]['input_hash'],
+        stamp_cost=stamp_cost,
+        bhash=previous_block_hash,
+        num=current_height,
+        tx_idx = tx_bad_idx,
+        result0 = rez_batch,
+    )
+    log.debug(f"rez_batch2={rez_batch2}")
+
+    subblocks = []
+    i = 0
+    for results0 in rez_batch:
+        results = prepare_data(results0)
+        tx_batch = work[i]
 
         if len(results) > 0:
             merkle = merklize([encode(r).encode() for r in results])
