@@ -72,7 +72,7 @@ def execute_tx(transaction, stamp_cost, environment: dict={}, tx_number=0, ini_w
         'result': safe_repr(output['result']),
         'tx_number': tx_number,
         'p_writes': p_writes,
-        'reads': p_reads,
+        'reads': output['reads'] # p_reads,  #
     }
     tx_output = format_dictionary(tx_output)
     executor.driver.pending_writes.clear() # add
@@ -264,14 +264,13 @@ def check_conflict2(rez_batch):
     tx_bad = list(tx_bad0)
 
 
-    #DEBUG mode tx_bad.append(rez_batch[0][0]['hash'])
-    #DEBUG mode tx_index[rez_batch[0][0]['hash']] = (0,0)
-    tx_bad = []
-    tx_index = {}
-    for i1 in range(len(rez_batch)):
-        for i2 in range(len(rez_batch[i1])):
-            tx_bad.append(rez_batch[i1][i2]['hash'])
-            tx_index[rez_batch[i1][i2]['hash']] = (i1,i2)
+    #DEBUG
+    # tx_bad = []
+    # tx_index = {}
+    # for i1 in range(len(rez_batch)):
+    #     for i2 in range(len(rez_batch[i1])):
+    #         tx_bad.append(rez_batch[i1][i2]['hash'])
+    #         tx_index[rez_batch[i1][i2]['hash']] = (i1,i2)
     # DEBUG mode  END
 
     return tx_bad, tx_index
